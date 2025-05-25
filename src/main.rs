@@ -1,30 +1,37 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
+#![allow(clippy::multiple_crate_versions, reason = "Dependency")]
 
-use std::str::FromStr;
-
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
-use upnp_rs::common::uri::{URI, URL};
-use upnp_rs::common::xml::write::Writable;
-use upnp_rs::description::{device::{Device as DescriptionDevice}, TypeID};
-use upnp_rs::description::service::Spcd;
-use upnp_rs::discovery::notify::Device as NotifyDevice;
-use upnp_rs::discovery::search::SearchTarget;
-use upnp_rs::SpecVersion;
-use quick_xml::events::Event;
-use quick_xml::{Reader, Writer};
+use actix_web::{App, HttpRequest, HttpResponse, HttpServer, web};
 use local_ip_address::local_ip;
+use quick_xml::{Reader, Writer, events::Event};
+use std::str::FromStr;
+use upnp_rs::{
+    SpecVersion,
+    common::{
+        uri::{URI, URL},
+        xml::write::Writable,
+    },
+    description::{TypeID, device::Device as DescriptionDevice, service::Spcd},
+    discovery::{notify::Device as NotifyDevice, search::SearchTarget},
+};
 use uuid::Uuid;
 
 async fn description_handler(data: web::Data<DescriptionDevice>) -> HttpResponse {
     let mut writer = Writer::new(Vec::new());
-    data.write(&mut writer).expect("Failed to serialize device description");
-    HttpResponse::Ok().content_type("text/xml").body(writer.into_inner())
+    data.write(&mut writer)
+        .expect("Failed to serialize device description");
+    HttpResponse::Ok()
+        .content_type("text/xml")
+        .body(writer.into_inner())
 }
 
 async fn avtransport_scpd_handler(data: web::Data<Spcd>) -> HttpResponse {
     let mut writer = Writer::new(Vec::new());
-    data.write(&mut writer).expect("Failed to serialize service description");
-    HttpResponse::Ok().content_type("text/xml").body(writer.into_inner())
+    data.write(&mut writer)
+        .expect("Failed to serialize service description");
+    HttpResponse::Ok()
+        .content_type("text/xml")
+        .body(writer.into_inner())
 }
 
 async fn control_handler(_req: HttpRequest, body: web::Bytes) -> HttpResponse {
@@ -43,7 +50,7 @@ async fn control_handler(_req: HttpRequest, body: web::Bytes) -> HttpResponse {
             _ => (),
         }
     };
-    eprintln!("Received action for AVTransport: {}", action_name);
+    eprintln!("Received action for AVTransport: {action_name}");
     let response = format!(
         r#"<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
     <s:Body>
@@ -60,7 +67,7 @@ async fn control_handler(_req: HttpRequest, body: web::Bytes) -> HttpResponse {
 async fn main() -> std::io::Result<()> {
     let local_ip = local_ip().expect("Failed to get local IP").to_string();
     let port = 8080;
-    let location = format!("http://{}:{}/description.xml", local_ip, port);
+    let location = format!("http://{local_ip}:{port}/description.xml");
     let uuid = Uuid::new_v4().to_string();
 
     let description_device = DescriptionDevice {
@@ -96,7 +103,6 @@ async fn main() -> std::io::Result<()> {
     };
 
     let avtransport_spcd = Spcd {
-        // spec_version: (1, 0),
         spec_version: SpecVersion::V10,
         action_list: vec![],
         service_state_table: vec![],
@@ -104,8 +110,11 @@ async fn main() -> std::io::Result<()> {
 
     let mut notify_device = NotifyDevice {
         notification_type: SearchTarget::DeviceType("MediaRenderer:1".to_string()),
-        service_name: URI::from_str(&format!("uuid:{}::urn:schemas-upnp-org:device:MediaRenderer:1", uuid))
-            .expect("Invalid URI"),
+        service_name: URI::from_str(&format!(
+            "uuid:{}::urn:schemas-upnp-org:device:MediaRenderer:1",
+            uuid
+        ))
+        .expect("Invalid URI"),
         location: URL::from_str(&location).expect("Invalid URL"),
         boot_id: 1,
         config_id: 1,
@@ -127,7 +136,8 @@ async fn main() -> std::io::Result<()> {
     tokio::spawn(server_handle);
 
     let options = upnp_rs::discovery::notify::Options::default_for(SpecVersion::V10);
-    upnp_rs::discovery::notify::device_available(&mut notify_device, options).expect("Failed to send SSDP notification");
+    upnp_rs::discovery::notify::device_available(&mut notify_device, options)
+        .expect("Failed to send SSDP notification");
 
     tokio::signal::ctrl_c().await?;
     Ok(())

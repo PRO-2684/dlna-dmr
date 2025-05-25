@@ -6,7 +6,7 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 
 /// Add two numbers together.
-pub fn add(left: u64, right: u64) -> u64 {
+#[must_use] pub const fn add(left: u64, right: u64) -> u64 {
     left + right
 }
 

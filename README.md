@@ -8,7 +8,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/dlna-dmr?logo=rust)](https://crates.io/crates/dlna-dmr)
 [![docs.rs](https://img.shields.io/docsrs/dlna-dmr?logo=rust)](https://docs.rs/dlna-dmr)
 
-DLMA Digital Media Renderer
+DLNA Digital Media Renderer.
 
 ## ⚙️ Automatic Releases Setup
 
