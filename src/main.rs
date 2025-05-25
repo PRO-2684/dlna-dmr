@@ -4,7 +4,8 @@
 use actix_web::{App, HttpRequest, HttpResponse, HttpServer, web};
 use local_ip_address::local_ip;
 use quick_xml::{Reader, Writer, events::Event};
-use std::str::FromStr;
+use tokio::time::interval;
+use std::{str::FromStr, time::Duration};
 use upnp_rs::{
     SpecVersion,
     common::{
@@ -12,7 +13,7 @@ use upnp_rs::{
         xml::write::Writable,
     },
     description::{TypeID, device::Device as DescriptionDevice, service::Spcd},
-    discovery::{notify::Device as NotifyDevice, search::SearchTarget},
+    discovery::{notify::{self, Device as NotifyDevice}, search::SearchTarget},
 };
 use uuid::Uuid;
 
@@ -69,6 +70,7 @@ async fn main() -> std::io::Result<()> {
     let port = 8080;
     let location = format!("http://{local_ip}:{port}/description.xml");
     let uuid = Uuid::new_v4().to_string();
+    eprintln!("UUID: {uuid}");
 
     let description_device = DescriptionDevice {
         device_type: TypeID::Device {
@@ -111,8 +113,7 @@ async fn main() -> std::io::Result<()> {
     let mut notify_device = NotifyDevice {
         notification_type: SearchTarget::DeviceType("MediaRenderer:1".to_string()),
         service_name: URI::from_str(&format!(
-            "uuid:{}::urn:schemas-upnp-org:device:MediaRenderer:1",
-            uuid
+            "uuid:{uuid}::urn:schemas-upnp-org:device:MediaRenderer:1"
         ))
         .expect("Invalid URI"),
         location: URL::from_str(&location).expect("Invalid URL"),
@@ -135,10 +136,23 @@ async fn main() -> std::io::Result<()> {
     let server_handle = server.run();
     tokio::spawn(server_handle);
 
-    let options = upnp_rs::discovery::notify::Options::default_for(SpecVersion::V10);
-    upnp_rs::discovery::notify::device_available(&mut notify_device, options)
+    let options = notify::Options::default_for(SpecVersion::V10);
+    notify::device_available(&mut notify_device, options.clone())
         .expect("Failed to send SSDP notification");
+    // Spawn a task for periodic SSDP alive notifications
+    tokio::spawn(async move {
+        let mut interval = interval(Duration::from_secs(1800)); // 30 minutes
+        loop {
+            interval.tick().await;
+            if let Err(e) = notify::device_available(&mut notify_device, options.clone()) {
+                eprintln!("Failed to send SSDP alive notification: {e}");
+            } else {
+                eprintln!("Sent SSDP alive notification");
+            }
+        }
+    });
 
+    eprintln!("UPnP device available at: {location}");
     tokio::signal::ctrl_c().await?;
     Ok(())
 }
