@@ -2,7 +2,7 @@
 
 use std::{io::{Error, ErrorKind, Result}, mem::MaybeUninit, net::{Ipv4Addr, SocketAddrV4}, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
 use socket2::{Socket, SockAddr, Domain, Type, Protocol};
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 
 /// A SSDP server implementation.
 #[derive(Debug)]
@@ -29,16 +29,16 @@ impl SSDPServer {
     pub fn new(address: SocketAddrV4, uuid: String, http_port: u16, running: Arc<AtomicBool>) -> Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
-        socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?;
         socket.set_reuse_address(true)?;
-        socket.bind(&SockAddr::from(address))?; // FIXME: Maybe Unspecified?
+        socket.bind(&SockAddr::from(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, address.port())))?;
+        socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?;
+        // Set the socket to allow broadcast.
+        socket.set_broadcast(true)?;
         // Join the SSDP multicast group.
         socket.join_multicast_v4(
             &Self::SSDP_MULTICAST_ADDR.ip(), // Multicast address
             address.ip(), // Use the unspecified address for the local interface
         )?;
-        // Set the socket to allow broadcast.
-        socket.set_broadcast(true)?;
         Ok(SSDPServer { socket, address, uuid, http_port, running })
     }
 
@@ -100,7 +100,6 @@ impl SSDPServer {
         if message.starts_with("M-SEARCH") {
             self.answer_search(address, message)
         } else if message.starts_with("NOTIFY") {
-            debug!("Received SSDP NOTIFY message: {message}");
             Ok(())
         } else {
             Err(Error::new(
@@ -117,7 +116,7 @@ impl SSDPServer {
             "HTTP/1.1 200 OK\r\n\
              ST: upnp:rootdevice\r\n\
              USN: uuid:{}::upnp:rootdevice\r\n\
-             Location: http://{}:{}/dummy-renderer/DeviceSpec\r\n\
+             Location: http://{}:{}/DeviceSpec\r\n\
              OPT: \"http://schemas.upnp.org/upnp/1/0/\"; ns=01\r\n\
              Cache-Control: max-age=900\r\n\
              Server: {}\r\n\
@@ -130,6 +129,7 @@ impl SSDPServer {
             Self::SSDP_SERVER_NAME,
             chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string()
         );
+        trace!("Sending SSDP response to {address}: {response}");
         self.socket.send_to(response.as_bytes(), &SockAddr::from(address))?;
 
         Ok(())
@@ -150,7 +150,7 @@ impl SSDPServer {
                         error!("Received non-IPv4 address: {addr:?}");
                         continue;
                     };
-                    debug!("Received SSDP message from {ipv4}: {message}");
+                    trace!("Received SSDP message from {ipv4}: {message}");
                     if let Err(e) = self.answer(ipv4, &message) {
                         error!("Error answering SSDP message: {e}");
                     }

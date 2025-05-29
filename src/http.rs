@@ -2,8 +2,8 @@
 
 use std::{io::{Cursor, Result}, net::SocketAddrV4, sync::{atomic::{AtomicBool, Ordering}, Arc}, thread};
 use super::DMROptions;
-use log::{error, info};
-use tiny_http::{Method, Request, Response as GenericResponse, Server, StatusCode};
+use log::{debug, error, info};
+use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
 type Response = GenericResponse<Cursor<Vec<u8>>>;
 
@@ -55,6 +55,7 @@ impl HTTPServer {
 
     /// Handles a given request and returns a response.
     fn handle_request(&self, request: Request) -> Result<()> {
+        debug!("Received request: {request:?}");
         let method = request.method();
         let is_post = match method {
             Method::Get => false,
@@ -70,45 +71,66 @@ impl HTTPServer {
             // Posting to valid endpoints
             "/DeviceSpec" | "/RenderingControl" | "/AVTransport" | "/Ignore" if is_post => Self::post_invalid(),
             // Handle GET requests for valid endpoints
-            "/DeviceSpec" => Self::get_device_spec(),
+            "/DeviceSpec" => self.get_device_spec(),
             "/RenderingControl" => Self::get_rendering_control(),
             "/AVTransport" => Self::get_av_transport(),
             "/Ignore" => Self::get_ignore(),
             // Handle invalid paths
             _ => Self::not_found(),
         };
+        // debug!("Responding to request: {response:?}");
         request.respond(response)
     }
 
     /// Handles POST requests for valid endpoints.
     fn post_invalid() -> Response {
         // Error for now
+        error!("Not implemented: POST to valid endpoints, returning 718 Invalid InstanceID");
         Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718))
     }
 
     /// Handles GET requests for `/DeviceSpec`.
-    fn get_device_spec() -> Response {
-        Response::from_string("TODO: DeviceSpec response")
+    fn get_device_spec(&self) -> Response {
+        let xml = format!(
+            include_str!("./xml/DeviceSpec.tmpl.xml"),
+            friendlyName = &self.options.friendly_name,
+            modelName = &self.options.model_name,
+            modelDescription = &self.options.model_description,
+            modelURL = &self.options.model_url,
+            manufacturer = &self.options.manufacturer,
+            manufacturerURL = &self.options.manufacturer_url,
+            serialNumber = &self.options.serial_number,
+            uuid = &self.options.uuid,
+        );
+        Response::from_string(xml).with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/RenderingControl`.
     fn get_rendering_control() -> Response {
-        Response::from_string("TODO: RenderingControl response")
+        Response::from_string(include_str!("./xml/RenderingControl.xml")).with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/AVTransport`.
     fn get_av_transport() -> Response {
-        Response::from_string("TODO: AVTransport response")
+        Response::from_string(include_str!("./xml/AVTransport.xml")).with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/Ignore`.
     fn get_ignore() -> Response {
-        Response::from_string("TODO: Ignore response")
+        Response::from_string("").with_status_code(StatusCode(204))
     }
 
     /// Handles other requests (requests to invalid endpoints)
     fn not_found() -> Response {
         Response::from_string("Not Found").with_status_code(StatusCode(404))
+    }
+
+    /// HTTP header that indicates the content type for XML responses.
+    fn content_type_xml() -> Header {
+        Header::from_bytes(
+            "Content-Type",
+            "text/xml; charset=\"utf-8\"".as_bytes(),
+        ).unwrap()
     }
 }
 

@@ -6,38 +6,38 @@
 	</specVersion>
 	<device>
 		<deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType>
-		<friendlyName>{{friendlyName}}</friendlyName>
+		<friendlyName>{friendlyName}</friendlyName>
 		<modelNumber>1</modelNumber>
-		<modelName>{{modelName}}</modelName>
-		<modelDescription>{{modelDescription}}</modelDescription>
-		<manufacturer>{{manufacturer}}</manufacturer>
-		<manufacturerURL>{{manufacturerURL}}</manufacturerURL>
-		<modelURL>{{modelURL}}</modelURL>
-		<serialNumber>{{serialNumber}}</serialNumber>
-		<UDN>uuid:{{uuid}}</UDN>
+		<modelName>{modelName}</modelName>
+		<modelDescription>{modelDescription}</modelDescription>
+		<modelURL>{modelURL}</modelURL>
+		<manufacturer>{manufacturer}</manufacturer>
+		<manufacturerURL>{manufacturerURL}</manufacturerURL>
+		<serialNumber>{serialNumber}</serialNumber>
+		<UDN>uuid:{uuid}</UDN>
 		<dlna:X_DLNADOC xmlns:dlna="urn:schemas-dlna-org:device-1-0">DMR-1.50</dlna:X_DLNADOC>
 		<iconList></iconList>
 		<serviceList>
 			<service>
 				<serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
 				<serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
-				<controlURL>/dummy-renderer/RenderingControl</controlURL>
+				<controlURL>/RenderingControl</controlURL>
 				<eventSubURL/>
-				<SCPDURL>/dummy-renderer/RenderingControl</SCPDURL>
+				<SCPDURL>/RenderingControl</SCPDURL>
 			</service>
 			<service>
 				<serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
 				<serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
-				<controlURL>/dummy-renderer/AVTransport</controlURL>
+				<controlURL>/AVTransport</controlURL>
 				<eventSubURL/>
-				<SCPDURL>/dummy-renderer/AVTransport</SCPDURL>
+				<SCPDURL>/AVTransport</SCPDURL>
 			</service>
 			<service>
 				<serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
 				<serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
-				<controlURL>/dummy-renderer/Ignore</controlURL>
+				<controlURL>/Ignore</controlURL>
 				<eventSubURL/>
-				<SCPDURL>/dummy-renderer/Ignore</SCPDURL>
+				<SCPDURL>/Ignore</SCPDURL>
 			</service>
 		</serviceList>
 	</device>
