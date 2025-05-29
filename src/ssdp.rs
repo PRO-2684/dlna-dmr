@@ -2,7 +2,7 @@
 
 use std::{io::{Error, ErrorKind, Result}, mem::MaybeUninit, net::{Ipv4Addr, SocketAddrV4}, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
 use socket2::{Socket, SockAddr, Domain, Type, Protocol};
-use log::{debug, error, info, trace};
+use log::{debug, error, info};
 
 /// A SSDP server implementation.
 #[derive(Debug)]
@@ -129,7 +129,7 @@ impl SSDPServer {
             Self::SSDP_SERVER_NAME,
             chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string()
         );
-        trace!("Sending SSDP response to {address}: {response}");
+        debug!("Sending SSDP response to {address}: {response}");
         self.socket.send_to(response.as_bytes(), &SockAddr::from(address))?;
 
         Ok(())
@@ -150,7 +150,7 @@ impl SSDPServer {
                         error!("Received non-IPv4 address: {addr:?}");
                         continue;
                     };
-                    trace!("Received SSDP message from {ipv4}: {message}");
+                    debug!("Received SSDP message from {ipv4}: {message}");
                     if let Err(e) = self.answer(ipv4, &message) {
                         error!("Error answering SSDP message: {e}");
                     }

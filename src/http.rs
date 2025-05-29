@@ -69,7 +69,10 @@ impl HTTPServer {
         let path = request.url();
         let response = match path {
             // Posting to valid endpoints
-            "/DeviceSpec" | "/RenderingControl" | "/AVTransport" | "/Ignore" if is_post => Self::post_invalid(),
+            "/DeviceSpec" | "/RenderingControl" | "/AVTransport" | "/Ignore" if is_post => {
+                Self::post_all(request)?;
+                return Ok(());
+            },
             // Handle GET requests for valid endpoints
             "/DeviceSpec" => self.get_device_spec(),
             "/RenderingControl" => Self::get_rendering_control(),
@@ -82,11 +85,18 @@ impl HTTPServer {
         request.respond(response)
     }
 
-    /// Handles POST requests for valid endpoints.
-    fn post_invalid() -> Response {
-        // Error for now
-        error!("Not implemented: POST to valid endpoints, returning 718 Invalid InstanceID");
-        Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718))
+    /// Handles POST requests for all valid endpoints.
+    fn post_all(mut request: Request) -> Result<()> {
+        let mut body = String::with_capacity(request.body_length().unwrap_or_default());
+        request.as_reader().read_to_string(&mut body)?;
+        let path = request.url();
+
+        info!("POST {path}\n{body}");
+
+        let response = Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));
+        request.respond(response)?;
+
+        Ok(())
     }
 
     /// Handles GET requests for `/DeviceSpec`.
@@ -129,7 +139,7 @@ impl HTTPServer {
     fn content_type_xml() -> Header {
         Header::from_bytes(
             "Content-Type",
-            "text/xml; charset=\"utf-8\"".as_bytes(),
+            r#"text/xml; charset="utf-8""#.as_bytes(),
         ).unwrap()
     }
 }
