@@ -2,6 +2,7 @@
 
 use super::{DMROptions, extract};
 use log::{debug, error, info};
+use quick_xml::escape::escape;
 use std::{
     io::{Cursor, Result},
     net::SocketAddrV4,
@@ -113,29 +114,35 @@ impl HTTPServer {
 
     /// Handles GET requests for `/DeviceSpec`.
     fn get_device_spec(&self) -> Response {
+        /// Escapes given field under `self.options`.
+        macro_rules! e {
+            ($i:ident) => {
+                escape(&self.options.$i)
+            };
+        }
         let xml = format!(
-            include_str!("./xml/DeviceSpec.tmpl.xml"),
-            friendlyName = &self.options.friendly_name,
-            modelName = &self.options.model_name,
-            modelDescription = &self.options.model_description,
-            modelURL = &self.options.model_url,
-            manufacturer = &self.options.manufacturer,
-            manufacturerURL = &self.options.manufacturer_url,
-            serialNumber = &self.options.serial_number,
-            uuid = &self.options.uuid,
+            include_str!("./template/DeviceSpec.tmpl.xml"),
+            friendlyName = e!(friendly_name),
+            modelName = e!(model_name),
+            modelDescription = e!(model_description),
+            modelURL = e!(model_url),
+            manufacturer = e!(manufacturer),
+            manufacturerURL = e!(manufacturer_url),
+            serialNumber = e!(serial_number),
+            uuid = e!(uuid),
         );
         Response::from_string(xml).with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/RenderingControl`.
     fn get_rendering_control() -> Response {
-        Response::from_string(include_str!("./xml/RenderingControl.xml"))
+        Response::from_string(include_str!("./template/RenderingControl.xml"))
             .with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/AVTransport`.
     fn get_av_transport() -> Response {
-        Response::from_string(include_str!("./xml/AVTransport.xml"))
+        Response::from_string(include_str!("./template/AVTransport.xml"))
             .with_header(Self::content_type_xml())
     }
 

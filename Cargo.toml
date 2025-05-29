@@ -17,7 +17,8 @@ ctrlc = { version = "3.4.7", optional = true }
 env_logger = { version = "0.11.8", optional = true }
 local-ip-address = "0.6.5"
 log = "0.4.27"
-regex = "1.11.1"
+quick-xml = { version = "0.37.5", features = ["serialize"] }
+serde = { version = "1.0.219", features = ["derive"] }
 socket2 = "0.5.10"
 tiny_http = "0.12.0"
 uuid = { version = "1.17.0", features = ["v4"] }

@@ -43,6 +43,7 @@ $ dlna-dmr
 
 ## ✅ TODO
 
+- [ ] Actual XML parsing
 - [ ] "Heartbeat" - send periodic alive messages to the network
 - [ ] Command line arguments parsing
 - [ ] Config file
