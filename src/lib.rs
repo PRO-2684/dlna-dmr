@@ -7,10 +7,12 @@
 
 mod http;
 mod ssdp;
+mod extractor;
 
 use local_ip_address::local_ip;
 use log::info;
 use http::HTTPServer;
+use extractor::extract;
 use ssdp::SSDPServer;
 use std::{net::{IpAddr, SocketAddrV4}, io::Result, sync::{Arc, atomic::AtomicBool}};
 

@@ -1,7 +1,7 @@
 //! HTTP-related code.
 
 use std::{io::{Cursor, Result}, net::SocketAddrV4, sync::{atomic::{AtomicBool, Ordering}, Arc}, thread};
-use super::DMROptions;
+use super::{DMROptions, extract};
 use log::{debug, error, info};
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
@@ -15,6 +15,8 @@ pub struct HTTPServer {
 }
 
 impl HTTPServer {
+    // Create, run, and stop the HTTP server.
+
     /// Creates a new HTTP server with the given options.
     pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
         let address = SocketAddrV4::new(*options.address.ip(), options.http_port);
@@ -53,6 +55,8 @@ impl HTTPServer {
         Ok(())
     }
 
+    // Request handling methods.
+
     /// Handles a given request and returns a response.
     fn handle_request(&self, request: Request) -> Result<()> {
         debug!("Received request: {request:?}");
@@ -90,8 +94,11 @@ impl HTTPServer {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
         let path = request.url();
+        for text in extract(&path, &body) {
+            info!("{text}");
+        }
 
-        info!("POST {path}\n{body}");
+        debug!("POST {path}\n{body}");
 
         let response = Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));
         request.respond(response)?;
