@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <s:Body>
+        <u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+            <Speed>1</Speed>
+            <InstanceID>0</InstanceID>
+        </u:Play>
+    </s:Body>
+</s:Envelope>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+    <s:Body>
+        <u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+            <InstanceID>0</InstanceID>
+            <CurrentURI>http://example.com/sample.mp4?param1=a&amp;param2=b</CurrentURI>
+            <CurrentURIMetaData/>
+        </u:SetAVTransportURI>
+    </s:Body>
+</s:Envelope>

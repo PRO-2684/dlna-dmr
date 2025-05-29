@@ -6,11 +6,11 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::multiple_crate_versions, reason = "Dependencies' requirements")]
 
-mod extractor;
+pub mod xml;
 mod http;
 mod ssdp;
 
-use extractor::extract;
+use xml::extract;
 use http::HTTPServer;
 use local_ip_address::local_ip;
 use log::info;
