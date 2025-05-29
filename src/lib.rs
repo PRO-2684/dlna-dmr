@@ -4,17 +4,22 @@
 
 #![deny(missing_docs)]
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
+#![allow(clippy::multiple_crate_versions, reason = "Dependencies' requirements")]
 
+mod extractor;
 mod http;
 mod ssdp;
-mod extractor;
 
+use extractor::extract;
+use http::HTTPServer;
 use local_ip_address::local_ip;
 use log::info;
-use http::HTTPServer;
-use extractor::extract;
 use ssdp::SSDPServer;
-use std::{net::{IpAddr, SocketAddrV4}, io::Result, sync::{Arc, atomic::AtomicBool}};
+use std::{
+    io::Result,
+    net::{IpAddr, SocketAddrV4},
+    sync::{Arc, atomic::AtomicBool},
+};
 
 /// Options for creating a new [`DMR`] instance.
 #[derive(Debug, Clone)]
@@ -52,7 +57,7 @@ impl Default for DMROptions {
             }
         };
         let uuid = uuid::Uuid::new_v4().to_string();
-        DMROptions {
+        Self {
             address,
             uuid,
             http_port: 8080, // Default HTTP port
@@ -77,19 +82,36 @@ pub struct DMR {
 
 impl DMR {
     /// Creates a new DMR instance with given options and running signal.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the SSDP server cannot be created, like socket binding failure.
     pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
-        let ssdp = SSDPServer::new(options.address, options.uuid.clone(), options.http_port, running.clone())
-            .expect("Failed to create SSDP server");
+        let ssdp = SSDPServer::new(
+            options.address,
+            options.uuid.clone(),
+            options.http_port,
+            running.clone(),
+        )
+        .expect("Failed to create SSDP server");
         let http = HTTPServer::new(options, running);
-        DMR { ssdp, http }
+        Self { ssdp, http }
     }
 
-    /// Starts the DMR instance, blocking current thread. To stop the DMR, set the `running` signal to `false`:
+    /// Starts the DMR instance, blocking current thread.
+    ///
+    /// ## Stopping
+    ///
+    /// To stop the DMR, set the `running` signal, as you've passed in the [`new`](Self::new) method, to `false`:
     ///
     /// ```rust ignore
     /// use std::sync::atomic::Ordering;
     /// running.store(false, Ordering::SeqCst);
     /// ```
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if alive notification fails.
     pub fn start(&self) -> Result<()> {
         self.ssdp.alive()?;
 

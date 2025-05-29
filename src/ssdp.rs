@@ -1,8 +1,17 @@
 //! SSDP-related code.
 
-use std::{io::{Error, ErrorKind, Result}, mem::MaybeUninit, net::{Ipv4Addr, SocketAddrV4}, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
-use socket2::{Socket, SockAddr, Domain, Type, Protocol};
 use log::{debug, error, info};
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use std::{
+    io::{Error, ErrorKind, Result},
+    mem::MaybeUninit,
+    net::{Ipv4Addr, SocketAddrV4},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 /// A SSDP server implementation.
 #[derive(Debug)]
@@ -16,30 +25,42 @@ pub struct SSDPServer {
 
 impl SSDPServer {
     /// The multicast address used for SSDP discovery.
-    const SSDP_MULTICAST_ADDR: SocketAddrV4 = SocketAddrV4::new(
-        Ipv4Addr::new(239, 255, 255, 250),
-        1900,
-    );
+    const SSDP_MULTICAST_ADDR: SocketAddrV4 =
+        SocketAddrV4::new(Ipv4Addr::new(239, 255, 255, 250), 1900);
     /// The SSDP server's name.
     const SSDP_SERVER_NAME: &'static str = "CustomSSDP/1.0";
     /// The timeout for reading from the socket in milliseconds.
     const SOCKET_READ_TIMEOUT: u64 = 1000;
 
     /// Creates a new SSDP server bound to the specified address with the given UUID and HTTP port.
-    pub fn new(address: SocketAddrV4, uuid: String, http_port: u16, running: Arc<AtomicBool>) -> Result<Self> {
+    pub fn new(
+        address: SocketAddrV4,
+        uuid: String,
+        http_port: u16,
+        running: Arc<AtomicBool>,
+    ) -> Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
         socket.set_reuse_address(true)?;
-        socket.bind(&SockAddr::from(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, address.port())))?;
+        socket.bind(&SockAddr::from(SocketAddrV4::new(
+            Ipv4Addr::UNSPECIFIED,
+            address.port(),
+        )))?;
         socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?;
         // Set the socket to allow broadcast.
         socket.set_broadcast(true)?;
         // Join the SSDP multicast group.
         socket.join_multicast_v4(
-            &Self::SSDP_MULTICAST_ADDR.ip(), // Multicast address
-            address.ip(), // Use the unspecified address for the local interface
+            Self::SSDP_MULTICAST_ADDR.ip(), // Multicast address
+            address.ip(),                   // Use the unspecified address for the local interface
         )?;
-        Ok(SSDPServer { socket, address, uuid, http_port, running })
+        Ok(Self {
+            socket,
+            address,
+            uuid,
+            http_port,
+            running,
+        })
     }
 
     /// Send a SSDP notify message with given Notification Type, Notification Sub Type and Unique Service Name.
@@ -60,23 +81,41 @@ impl SSDPServer {
              CACHE-CONTROL: max-age=1800\r\n\
              SERVER: {}\r\n\
              \r\n",
-            Self::SSDP_MULTICAST_ADDR, nt, nts, usn,
-            self.address, Self::SSDP_SERVER_NAME
+            Self::SSDP_MULTICAST_ADDR,
+            nt,
+            nts,
+            usn,
+            self.address,
+            Self::SSDP_SERVER_NAME
         );
-        self.socket.send_to(message.as_bytes(), &SockAddr::from(Self::SSDP_MULTICAST_ADDR))?;
+        self.socket.send_to(
+            message.as_bytes(),
+            &SockAddr::from(Self::SSDP_MULTICAST_ADDR),
+        )?;
         Ok(())
     }
 
     /// Broadcast a notify message for given `service` with given Notification Sub Type.
     fn notify_service(&self, service: &str, nts: &str) -> Result<()> {
-        self.notify(&format!("urn:schemas-upnp-org:service:{service}:1"), nts, &format!("uuid:{uuid}::urn:schemas-upnp-org:service:{service}:1", uuid = self.uuid))
+        self.notify(
+            &format!("urn:schemas-upnp-org:service:{service}:1"),
+            nts,
+            &format!(
+                "uuid:{uuid}::urn:schemas-upnp-org:service:{service}:1",
+                uuid = self.uuid
+            ),
+        )
     }
 
     /// Broadcast multiple relevant notify messages with given Notification Sub Type.
     fn notify_all(&self, nts: &str) -> Result<()> {
         let uuid_with_prefix = format!("uuid:{}", self.uuid);
 
-        self.notify("upnp:rootdevice", nts, &format!("{uuid_with_prefix}::upnp:rootdevice"))?;
+        self.notify(
+            "upnp:rootdevice",
+            nts,
+            &format!("{uuid_with_prefix}::upnp:rootdevice"),
+        )?;
         self.notify(&uuid_with_prefix, nts, &uuid_with_prefix)?;
         for service in ["RenderingControl", "AVTransport", "ConnectionManager"] {
             self.notify_service(service, nts)?;
@@ -127,10 +166,11 @@ impl SSDPServer {
             self.address.ip(),
             self.http_port,
             Self::SSDP_SERVER_NAME,
-            chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string()
+            chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT")
         );
         debug!("Sending SSDP response to {address}: {response}");
-        self.socket.send_to(response.as_bytes(), &SockAddr::from(address))?;
+        self.socket
+            .send_to(response.as_bytes(), &SockAddr::from(address))?;
 
         Ok(())
     }
@@ -144,7 +184,8 @@ impl SSDPServer {
             match self.socket.recv_from(&mut buf) {
                 Ok((size, addr)) => {
                     // Safety: We already initialized the buffer with `MaybeUninit::zeroed()`, so we can safely assume the contents are valid.
-                    let slice = unsafe { std::slice::from_raw_parts(buf.as_ptr() as *const u8, size) };
+                    let slice =
+                        unsafe { std::slice::from_raw_parts(buf.as_ptr().cast::<u8>(), size) };
                     let message = String::from_utf8_lossy(slice);
                     let Some(ipv4) = addr.as_socket_ipv4() else {
                         error!("Received non-IPv4 address: {addr:?}");
@@ -155,10 +196,7 @@ impl SSDPServer {
                         error!("Error answering SSDP message: {e}");
                     }
                 }
-                Err(e) if e.kind() == ErrorKind::WouldBlock => {
-                    // Non-blocking mode, just continue
-                    continue;
-                }
+                Err(e) if e.kind() == ErrorKind::WouldBlock => {} // Non-blocking mode, just do nothing.
                 Err(e) => {
                     error!("Error receiving SSDP message: {e}");
                 }

@@ -1,8 +1,16 @@
 //! HTTP-related code.
 
-use std::{io::{Cursor, Result}, net::SocketAddrV4, sync::{atomic::{AtomicBool, Ordering}, Arc}, thread};
 use super::{DMROptions, extract};
 use log::{debug, error, info};
+use std::{
+    io::{Cursor, Result},
+    net::SocketAddrV4,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
+};
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
 type Response = GenericResponse<Cursor<Vec<u8>>>;
@@ -21,7 +29,11 @@ impl HTTPServer {
     pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
         let address = SocketAddrV4::new(*options.address.ip(), options.http_port);
         let server = Server::http(address).expect("Failed to create HTTP server");
-        HTTPServer { server, options, running }
+        Self {
+            server,
+            options,
+            running,
+        }
     }
 
     /// Runs the HTTP server, listening for requests.
@@ -43,17 +55,8 @@ impl HTTPServer {
                 }
             }
         }
-        if let Err(e) = self.stop() {
-            error!("Error stopping HTTP server: {e}");
-        } else {
-            info!("HTTP server stopped");
-        }
-    }
-
-    /// Stops the HTTP server.
-    fn stop(&self) -> Result<()> {
-        self.server.unblock();
-        Ok(())
+        self.server.unblock(); // Unblock the server to stop it gracefully.
+        info!("HTTP server stopped");
     }
 
     // Request handling methods.
@@ -69,7 +72,7 @@ impl HTTPServer {
                 return request.respond(
                     Response::from_string("Method Not Allowed").with_status_code(StatusCode(405)),
                 );
-            },
+            }
         };
         let path = request.url();
         let response = match path {
@@ -77,7 +80,7 @@ impl HTTPServer {
             "/DeviceSpec" | "/RenderingControl" | "/AVTransport" | "/Ignore" if is_post => {
                 Self::post_all(request)?;
                 return Ok(());
-            },
+            }
             // Handle GET requests for valid endpoints
             "/DeviceSpec" => self.get_device_spec(),
             "/RenderingControl" => Self::get_rendering_control(),
@@ -95,13 +98,14 @@ impl HTTPServer {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
         let path = request.url();
-        for text in extract(&path, &body) {
+        for text in extract(path, &body) {
             info!("{text}");
         }
 
         debug!("POST {path}\n{body}");
 
-        let response = Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));
+        let response =
+            Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));
         request.respond(response)?;
 
         Ok(())
@@ -125,12 +129,14 @@ impl HTTPServer {
 
     /// Handles GET requests for `/RenderingControl`.
     fn get_rendering_control() -> Response {
-        Response::from_string(include_str!("./xml/RenderingControl.xml")).with_header(Self::content_type_xml())
+        Response::from_string(include_str!("./xml/RenderingControl.xml"))
+            .with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/AVTransport`.
     fn get_av_transport() -> Response {
-        Response::from_string(include_str!("./xml/AVTransport.xml")).with_header(Self::content_type_xml())
+        Response::from_string(include_str!("./xml/AVTransport.xml"))
+            .with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/Ignore`.
@@ -145,10 +151,6 @@ impl HTTPServer {
 
     /// HTTP header that indicates the content type for XML responses.
     fn content_type_xml() -> Header {
-        Header::from_bytes(
-            "Content-Type",
-            r#"text/xml; charset="utf-8""#.as_bytes(),
-        ).unwrap()
+        Header::from_bytes("Content-Type", br#"text/xml; charset="utf-8""#).unwrap()
     }
 }
-
