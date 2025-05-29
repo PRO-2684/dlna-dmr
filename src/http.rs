@@ -26,6 +26,7 @@ impl HTTPServer {
 
     /// Runs the HTTP server, listening for requests.
     pub fn run(&self) {
+        info!("HTTP server listening on {}", self.server.server_addr());
         while self.running.load(Ordering::SeqCst) {
             match self.server.try_recv() {
                 Ok(Some(request)) => {

@@ -8,7 +8,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/dlna-dmr?logo=rust)](https://crates.io/crates/dlna-dmr)
 [![docs.rs](https://img.shields.io/docsrs/dlna-dmr?logo=rust)](https://docs.rs/dlna-dmr)
 
-DLNA Digital Media Renderer.
+A dummy DLNA Digital Media Renderer.
 
 ## ⚙️ Automatic Releases Setup
 
@@ -42,13 +42,23 @@ Navigate to the [Releases page](https://github.com/PRO-2684/dlna-dmr/releases) a
 cargo install dlna-dmr
 ```
 
-## 💡 Examples
-
-TODO
-
 ## 📖 Usage
 
-TODO
+```shell
+$ dlna-dmr
+[2025-05-29T10:05:46Z INFO  dlna_dmr] DMR started
+[2025-05-29T10:05:46Z INFO  dlna_dmr::ssdp] SSDP server running on 172.31.117.144:1900
+[2025-05-29T10:05:46Z INFO  dlna_dmr::http] HTTP server listening on 172.31.117.144:8080
+[2025-05-29T10:06:19Z INFO  dlna_dmr::http] Current URI: https://example.com/media.mp4
+^C[2025-05-29T10:06:29Z INFO  dlna_dmr::http] HTTP server stopped
+[2025-05-29T10:06:29Z INFO  dlna_dmr::ssdp] SSDP server stopped
+[2025-05-29T10:06:29Z INFO  dlna_dmr] DMR stopped
+```
+
+## ✅ TODO
+
+- [ ] Command line arguments parsing
+- [ ] Config file
 
 ## 🎉 Credits
 
