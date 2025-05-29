@@ -1,8 +1,7 @@
 //! SSDP-related code.
 
-use std::{io::{Error, ErrorKind, Result}, mem::MaybeUninit, net::{Ipv4Addr, Shutdown, SocketAddrV4}, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
+use std::{io::{Error, ErrorKind, Result}, mem::MaybeUninit, net::{Ipv4Addr, SocketAddrV4}, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Duration};
 use socket2::{Socket, SockAddr, Domain, Type, Protocol};
-use super::SOCKET_READ_TIMEOUT;
 use log::{debug, error, info};
 
 /// A SSDP server implementation.
@@ -23,12 +22,14 @@ impl SSDPServer {
     );
     /// The SSDP server's name.
     const SSDP_SERVER_NAME: &'static str = "CustomSSDP/1.0";
+    /// The timeout for reading from the socket in milliseconds.
+    const SOCKET_READ_TIMEOUT: u64 = 1000;
 
     /// Creates a new SSDP server bound to the specified address with the given UUID and HTTP port.
     pub fn new(address: SocketAddrV4, uuid: String, http_port: u16, running: Arc<AtomicBool>) -> Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
-        socket.set_read_timeout(Some(Duration::from_millis(SOCKET_READ_TIMEOUT)))?;
+        socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?;
         socket.set_reuse_address(true)?;
         socket.bind(&SockAddr::from(address))?; // FIXME: Maybe Unspecified?
         // Join the SSDP multicast group.
@@ -169,6 +170,5 @@ impl SSDPServer {
         } else {
             info!("SSDP server stopped");
         }
-        self.socket.shutdown(Shutdown::Both).unwrap_or_else(|e| error!("Failed to shutdown SSDP socket: {e}"));
     }
 }

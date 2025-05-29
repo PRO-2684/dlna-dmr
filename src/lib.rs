@@ -9,12 +9,10 @@ mod http;
 mod ssdp;
 
 use local_ip_address::local_ip;
+use log::info;
 use http::HTTPServer;
 use ssdp::SSDPServer;
 use std::{net::{IpAddr, SocketAddrV4}, io::Result, sync::{Arc, atomic::AtomicBool}};
-
-/// Socket read timeout in milliseconds
-pub const SOCKET_READ_TIMEOUT: u64 = 1000;
 
 /// Options for creating a new [`DMR`] instance.
 #[derive(Debug, Clone)]
@@ -99,10 +97,10 @@ impl DMR {
             s.spawn(|| self.ssdp.run());
             // Start the HTTP server
             s.spawn(|| self.http.run());
-            eprintln!("DMR started");
+            info!("DMR started");
         });
 
-        eprintln!("DMR stopped");
+        info!("DMR stopped");
         Ok(())
     }
 }

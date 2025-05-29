@@ -2,6 +2,7 @@
 
 use std::{io::{Cursor, Result}, net::SocketAddrV4, sync::{atomic::{AtomicBool, Ordering}, Arc}, thread};
 use super::DMROptions;
+use log::{error, info};
 use tiny_http::{Method, Request, Response as GenericResponse, Server, StatusCode};
 
 type Response = GenericResponse<Cursor<Vec<u8>>>;
@@ -27,7 +28,7 @@ impl HTTPServer {
             match self.server.try_recv() {
                 Ok(Some(request)) => {
                     if let Err(e) = self.handle_request(request) {
-                        eprintln!("Error handling request: {e}");
+                        error!("Error handling request: {e}");
                     }
                 }
                 Ok(None) => {
@@ -35,14 +36,14 @@ impl HTTPServer {
                     thread::yield_now();
                 }
                 Err(e) => {
-                    eprintln!("Error receiving request: {e}");
+                    error!("Error receiving request: {e}");
                 }
             }
         }
         if let Err(e) = self.stop() {
-            eprintln!("Error stopping HTTP server: {e}");
+            error!("Error stopping HTTP server: {e}");
         } else {
-            eprintln!("HTTP server stopped");
+            info!("HTTP server stopped");
         }
     }
 
