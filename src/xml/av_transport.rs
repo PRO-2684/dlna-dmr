@@ -1,15 +1,15 @@
-//! Module for deserializing and extracting information from AVTransport XML messages. See [`AVTransportEnvelope`] and [`AVTransport`] for more details.
+//! Module for deserializing and extracting information from `AVTransport` XML messages. See [`AVTransportEnvelope`] and [`AVTransport`] for more details.
 
 #![allow(missing_docs, reason = "Fields are self-explanatory")]
 
 use std::fmt::Display;
 
-use quick_xml::{de, DeError};
-use serde::{Serialize, Deserialize};
+use quick_xml::{DeError, de};
+use serde::{Deserialize, Serialize};
 
-/// The envelope structure for AVTransport XML messages.
+/// The envelope structure for `AVTransport` XML messages.
 ///
-/// Usually, once deserialized, you'll call [`AVTransportEnvelope::into_inner`] to consume it and get the actual content of the message, which you could match against the [`AVTransport`] enum to determine the specific type of AVTransport action. For an even simpler usage, [`AVTransport`] implements `FromStr`, allowing you to directly deserialize from a XML envelope string.
+/// Usually, once deserialized, you'll call [`AVTransportEnvelope::into_inner`] to consume it and get the actual content of the message, which you could match against the [`AVTransport`] enum to determine the specific type of `AVTransport` action. For an even simpler usage, [`AVTransport`] implements `FromStr`, allowing you to directly deserialize from a XML envelope string.
 ///
 /// ## Example
 ///
@@ -47,6 +47,7 @@ pub struct AVTransportEnvelope {
 
 impl AVTransportEnvelope {
     /// Take ownership of the [`AVTransport`] value contained in the envelope, consuming the envelope.
+    #[must_use]
     pub fn into_inner(self) -> AVTransport {
         self.s_body.content
     }
@@ -59,7 +60,7 @@ pub struct SBody {
     content: AVTransport,
 }
 
-/// Different types of action that can be invoked in the AVTransport service. Can be directly parsed from an XML envelope string, IGNORING the outer envelope structure.
+/// Different types of action that can be invoked in the `AVTransport` service. Can be directly parsed from an XML envelope string, IGNORING the outer envelope structure.
 ///
 /// ## Example
 ///
@@ -178,7 +179,7 @@ pub enum PlaySpeed {
 impl Display for PlaySpeed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::One => write!(f, "1")
+            Self::One => write!(f, "1"),
         }
     }
 }
@@ -223,7 +224,8 @@ mod tests {
     use std::fs::read_to_string;
 
     fn get_xml(path: &str) -> AVTransport {
-        let xml = read_to_string(format!("tests/AVTransport/{path}")).expect("Failed to read XML file");
+        let xml =
+            read_to_string(format!("tests/AVTransport/{path}")).expect("Failed to read XML file");
         let av_transport: AVTransport = xml.parse().expect("Failed to parse AVTransport");
         av_transport
     }
@@ -231,33 +233,40 @@ mod tests {
     #[test]
     fn test_set_av_transport_uri() {
         let av_transport: AVTransport = get_xml("SetAVTransportURI.xml");
-        let set_action = match av_transport {
-            AVTransport::SetAVTransportURI(set) => set,
-            _ => panic!("Expected SetAVTransportURI variant"),
+        // let set_action = match av_transport {
+        //     AVTransport::SetAVTransportURI(set) => set,
+        //     _ => panic!("Expected SetAVTransportURI variant"),
+        // };
+        let AVTransport::SetAVTransportURI(set_action) = av_transport else {
+            panic!("Expected SetAVTransportURI variant")
         };
         assert_eq!(set_action.instance_id, 0);
-        assert_eq!(set_action.current_uri, "http://example.com/sample.mp4?param1=a&param2=b");
+        assert_eq!(
+            set_action.current_uri,
+            "http://example.com/sample.mp4?param1=a&param2=b"
+        );
         assert_eq!(set_action.current_uri_meta_data, "");
     }
 
     #[test]
     fn test_set_next_av_transport_uri() {
         let av_transport: AVTransport = get_xml("SetNextAVTransportURI.xml");
-        let set_action = match av_transport {
-            AVTransport::SetNextAVTransportURI(set) => set,
-            _ => panic!("Expected SetNextAVTransportURI variant"),
+        let AVTransport::SetNextAVTransportURI(set_action) = av_transport else {
+            panic!("Expected SetNextAVTransportURI variant")
         };
         assert_eq!(set_action.instance_id, 0);
-        assert_eq!(set_action.next_uri, "http://example.com/sample.mp4?param1=a&param2=b");
+        assert_eq!(
+            set_action.next_uri,
+            "http://example.com/sample.mp4?param1=a&param2=b"
+        );
         assert_eq!(set_action.next_uri_meta_data, "");
     }
 
     #[test]
     fn test_get_media_info() {
         let av_transport: AVTransport = get_xml("GetMediaInfo.xml");
-        let get_action = match av_transport {
-            AVTransport::GetMediaInfo(get) => get,
-            _ => panic!("Expected GetMediaInfo variant"),
+        let AVTransport::GetMediaInfo(get_action) = av_transport else {
+            panic!("Expected GetMediaInfo variant")
         };
         assert_eq!(get_action.instance_id, 0);
     }
@@ -265,9 +274,8 @@ mod tests {
     #[test]
     fn test_get_transport_info() {
         let av_transport: AVTransport = get_xml("GetTransportInfo.xml");
-        let get_action = match av_transport {
-            AVTransport::GetTransportInfo(get) => get,
-            _ => panic!("Expected GetTransportInfo variant"),
+        let AVTransport::GetTransportInfo(get_action) = av_transport else {
+            panic!("Expected GetTransportInfo variant")
         };
         assert_eq!(get_action.instance_id, 0);
     }
@@ -277,9 +285,8 @@ mod tests {
     #[test]
     fn test_play() {
         let av_transport: AVTransport = get_xml("Play.xml");
-        let play_action = match av_transport {
-            AVTransport::Play(play) => play,
-            _ => panic!("Expected Play variant"),
+        let AVTransport::Play(play_action) = av_transport else {
+            panic!("Expected Play variant")
         };
         assert_eq!(play_action.instance_id, 0);
         assert_eq!(play_action.speed, PlaySpeed::One);
@@ -288,9 +295,8 @@ mod tests {
     #[test]
     fn test_seek() {
         let av_transport: AVTransport = get_xml("Seek.xml");
-        let seek_action = match av_transport {
-            AVTransport::Seek(seek) => seek,
-            _ => panic!("Expected Seek variant"),
+        let AVTransport::Seek(seek_action) = av_transport else {
+            panic!("Expected Seek variant")
         };
         assert_eq!(seek_action.instance_id, 0);
         assert_eq!(seek_action.target, "12");

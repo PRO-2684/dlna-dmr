@@ -6,11 +6,10 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 #![allow(clippy::multiple_crate_versions, reason = "Dependencies' requirements")]
 
-pub mod xml;
 mod http;
 mod ssdp;
+pub mod xml;
 
-use xml::extract;
 use http::HTTPServer;
 use local_ip_address::local_ip;
 use log::info;
@@ -20,6 +19,7 @@ use std::{
     net::{IpAddr, SocketAddrV4},
     sync::{Arc, atomic::AtomicBool},
 };
+use xml::extract;
 
 /// Options for creating a new [`DMR`] instance.
 #[derive(Debug, Clone)]

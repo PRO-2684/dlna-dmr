@@ -99,7 +99,7 @@ impl HTTPServer {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
         let path = request.url();
-        for text in extract(path, &body) {
+        if let Some(text) = extract(path, &body) {
             info!("{text}");
         }
 
