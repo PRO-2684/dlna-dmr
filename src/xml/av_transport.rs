@@ -2,19 +2,17 @@
 //!
 //! See [`AVTransportEnvelope`] and [`AVTransport`] for more details. Documentation on `AVTransport` v1 can be found [here](https://www.upnp.org/specs/av/UPnP-av-AVTransport-v1-Service.pdf).
 
-use std::fmt::Display;
-
 use quick_xml::{DeError, de};
 use serde::{Deserialize, Serialize};
+use std::{fmt::Display, str::FromStr};
 
 /// The envelope structure for `AVTransport` XML messages.
 ///
-/// Usually, once deserialized, you'll call [`AVTransportEnvelope::into_inner`] to consume it and get the actual content of the message, which you could match against the [`AVTransport`] enum to determine the specific type of `AVTransport` action. For an even simpler usage, [`AVTransport`] implements `FromStr`, allowing you to directly deserialize from a XML envelope string.
+/// Usually, once deserialized, you'll call [`AVTransportEnvelope::into_inner`] to consume it and get the actual content of the message, which you could match against the [`AVTransport`] enum to determine the specific action type. For an even simpler usage, [`AVTransport`] implements `FromStr`, allowing you to directly deserialize from a XML envelope string.
 ///
 /// ## Example
 ///
 /// ```rust
-/// use serde::{Serialize, Deserialize};
 /// use quick_xml::de::from_str;
 /// use dlna_dmr::xml::av_transport::{AVTransportEnvelope, AVTransport, PlaySpeed};
 ///
@@ -26,8 +24,7 @@ use serde::{Deserialize, Serialize};
 ///             <InstanceID>0</InstanceID>
 ///         </u:Play>
 ///     </s:Body>
-/// </s:Envelope>
-/// "#;
+/// </s:Envelope>"#;
 /// let deserialized: AVTransportEnvelope = from_str(xml).expect("Failed to deserialize XML");
 /// let play_action = match deserialized.into_inner() {
 ///     AVTransport::Play(play) => play,
@@ -35,6 +32,7 @@ use serde::{Deserialize, Serialize};
 /// };
 /// assert_eq!(play_action.instance_id, 0);
 /// assert_eq!(play_action.speed, PlaySpeed::One);
+/// ```
 #[allow(missing_docs, reason = "Wrapper struct")]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AVTransportEnvelope {
@@ -67,7 +65,6 @@ pub struct SBody {
 /// ## Example
 ///
 /// ```rust
-/// use serde::{Serialize, Deserialize};
 /// use dlna_dmr::xml::av_transport::{AVTransport, PlaySpeed};
 ///
 /// let xml = r#"<?xml version="1.0"?>
@@ -78,8 +75,7 @@ pub struct SBody {
 ///             <InstanceID>0</InstanceID>
 ///         </u:Play>
 ///     </s:Body>
-/// </s:Envelope>
-/// "#;
+/// </s:Envelope>"#;
 /// let av_transport: AVTransport = xml.parse().expect("Failed to parse AVTransport");
 /// let play_action = match av_transport {
 ///     AVTransport::Play(play) => play,
@@ -87,6 +83,7 @@ pub struct SBody {
 /// };
 /// assert_eq!(play_action.instance_id, 0);
 /// assert_eq!(play_action.speed, PlaySpeed::One);
+/// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AVTransport {
     /// Specifies the URI of the resource to be controlled by the specified AVTransport instance.
@@ -121,7 +118,7 @@ pub enum AVTransport {
     GetCurrentTransportActions(Simple),
 }
 
-impl std::str::FromStr for AVTransport {
+impl FromStr for AVTransport {
     type Err = DeError;
     /// Deserialize from an envelope, IGNORING the outer envelope structure.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -136,7 +133,7 @@ pub struct SetAVTransportURI {
     /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies
+    /// The virtual instance of the AVTransport service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
     /// The URI of the resource to be controlled by the specified AVTransport instance.
@@ -153,7 +150,7 @@ pub struct SetNextAVTransportURI {
     /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies
+    /// The virtual instance of the AVTransport service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
     /// The URI of the resource to be controlled when the playback of the current resource (set earlier via SetAVTransportURI) finishes.
@@ -181,7 +178,7 @@ pub struct Simple {
     /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies
+    /// The virtual instance of the AVTransport service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -195,14 +192,14 @@ pub struct Play {
     /// The speed at which to play the resource.
     #[serde(rename = "Speed")]
     pub speed: PlaySpeed,
-    /// The virtual instance of the AVTransport service to which the action applies
+    /// The virtual instance of the AVTransport service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
 
 /// Possible values for the [`speed`](`Play::speed`) field of [`Play`].
 ///
-/// Only `1` is currently supported, which means normal speed playback.
+/// Currently, only `1` is supported, which means normal speed playback.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlaySpeed {
     /// Normal speed playback.
@@ -230,7 +227,7 @@ pub struct Seek {
     /// The unit in which the amount of seeking to be performed is specified.
     #[serde(rename = "Unit")]
     pub unit: SeekUnit,
-    /// The virtual instance of the AVTransport service to which the action applies
+    /// The virtual instance of the AVTransport service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -275,10 +272,6 @@ mod tests {
     #[test]
     fn test_set_av_transport_uri() {
         let av_transport: AVTransport = get_xml("SetAVTransportURI.xml");
-        // let set_action = match av_transport {
-        //     AVTransport::SetAVTransportURI(set) => set,
-        //     _ => panic!("Expected SetAVTransportURI variant"),
-        // };
         let AVTransport::SetAVTransportURI(set_action) = av_transport else {
             panic!("Expected SetAVTransportURI variant")
         };

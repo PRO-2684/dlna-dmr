@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <s:Body>
+        <u:SelectPreset xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1">
+            <PresetName>FactoryDefaults</PresetName>
+            <InstanceID>0</InstanceID>
+        </u:SelectPreset>
+    </s:Body>
+</s:Envelope>

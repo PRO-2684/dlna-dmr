@@ -3,18 +3,18 @@
 // Schemas - Generated via [xml_schema_generator](https://thomblin.github.io/xml_schema_generator/)
 pub mod av_transport;
 pub mod rendering_control;
-use av_transport::{AVTransport, AVTransportEnvelope};
-use log::warn;
-use quick_xml::de::from_str as deserialize;
 
 use super::Endpoint;
+use av_transport::AVTransport;
+use log::warn;
+use std::str::FromStr;
 
 /// Extracts potentially useful information from given text.
 #[must_use]
 pub fn extract(path: Endpoint, text: &str) -> Option<String> {
     match path {
-        Endpoint::AVTransport => match deserialize::<AVTransportEnvelope>(text) {
-            Ok(deserialized) => match deserialized.into_inner() {
+        Endpoint::AVTransport => match AVTransport::from_str(text) {
+            Ok(av_transport) => match av_transport {
                 AVTransport::SetAVTransportURI(set) => Some(format!(
                     "AVTransport::SetAvTransportUri current_uri: {}",
                     set.current_uri

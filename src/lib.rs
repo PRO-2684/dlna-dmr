@@ -17,7 +17,7 @@ use ssdp::SSDPServer;
 use std::{
     io::Result,
     net::{IpAddr, Ipv4Addr, SocketAddrV4},
-    sync::{atomic::AtomicBool, Arc},
+    sync::{Arc, atomic::AtomicBool},
 };
 use xml::extract;
 

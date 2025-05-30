@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <s:Body>
+        <u:SetMute xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1">
+            <DesiredMute>1</DesiredMute>
+            <Channel>Master</Channel>
+            <InstanceID>0</InstanceID>
+        </u:SetMute>
+    </s:Body>
+</s:Envelope>
