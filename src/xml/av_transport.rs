@@ -2,6 +2,8 @@
 
 #![allow(missing_docs, reason = "Fields are self-explanatory")]
 
+use std::fmt::Display;
+
 use quick_xml::{de, DeError};
 use serde::{Serialize, Deserialize};
 
@@ -31,9 +33,9 @@ use serde::{Serialize, Deserialize};
 ///     AVTransport::Play(play) => play,
 ///     _ => panic!("Expected Play variant"),
 /// };
-/// assert_eq!(play_action.instance_id, "0");
+/// assert_eq!(play_action.instance_id, 0);
 /// assert_eq!(play_action.speed, "1");
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AVTransportEnvelope {
     #[serde(rename = "@encodingStyle")]
     pub s_encoding_style: String,
@@ -51,7 +53,7 @@ impl AVTransportEnvelope {
 }
 
 /// Container structure.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SBody {
     #[serde(rename = "$value")]
     content: AVTransport,
@@ -80,9 +82,9 @@ pub struct SBody {
 ///     AVTransport::Play(play) => play,
 ///     _ => panic!("Expected Play variant"),
 /// };
-/// assert_eq!(play_action.instance_id, "0");
+/// assert_eq!(play_action.instance_id, 0);
 /// assert_eq!(play_action.speed, "1");
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AVTransport {
     SetAVTransportURI(SetAVTransportURI),
     SetNextAVTransportURI(SetNextAVTransportURI),
@@ -110,12 +112,12 @@ impl std::str::FromStr for AVTransport {
 }
 
 /// Arguments for the `SetAVTransportURI` action in [`AVTransport`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetAVTransportURI {
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     #[serde(rename = "InstanceID")]
-    pub instance_id: String,
+    pub instance_id: u32,
     #[serde(rename = "CurrentURI")]
     pub current_uri: String,
     #[serde(rename = "CurrentURIMetaData")]
@@ -123,12 +125,12 @@ pub struct SetAVTransportURI {
 }
 
 /// Arguments for the `SetNextAVTransportURI` action in [`AVTransport`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetNextAVTransportURI {
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     #[serde(rename = "InstanceID")]
-    pub instance_id: String,
+    pub instance_id: u32,
     #[serde(rename = "NextURI")]
     pub next_uri: String,
     #[serde(rename = "NextURIMetaData")]
@@ -147,36 +149,72 @@ pub struct SetNextAVTransportURI {
 /// - `Next`
 /// - `Previous`
 /// - `GetCurrentTransportActions`
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Simple {
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     #[serde(rename = "InstanceID")]
-    pub instance_id: String,
+    pub instance_id: u32,
 }
 
 /// Arguments for the `Play` action in [`AVTransport`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Play {
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     #[serde(rename = "Speed")]
-    pub speed: String,
+    pub speed: PlaySpeed,
     #[serde(rename = "InstanceID")]
-    pub instance_id: String,
+    pub instance_id: u32,
+}
+
+/// Possible values for the [`speed`](`Play::speed`) field of the [`Play`] action in [`AVTransport`].
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PlaySpeed {
+    #[serde(rename = "1")]
+    One,
+}
+
+impl Display for PlaySpeed {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::One => write!(f, "1")
+        }
+    }
 }
 
 /// Arguments for the `Seek` action in [`AVTransport`].
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Seek {
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     #[serde(rename = "Target")]
     pub target: String,
     #[serde(rename = "Unit")]
-    pub unit: String, // TODO: Enum
+    pub unit: SeekUnit,
     #[serde(rename = "InstanceID")]
-    pub instance_id: String,
+    pub instance_id: u32,
+}
+
+/// Possible values for the [`unit`](`Seek::unit`) field of the [`Seek`] action in [`AVTransport`].
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SeekUnit {
+    #[serde(rename = "ABS_COUNT")]
+    AbsCount,
+    #[serde(rename = "TRACK_NR")]
+    TrackNr,
+    #[serde(rename = "REL_TIME")]
+    RelTime,
+}
+
+impl Display for SeekUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AbsCount => write!(f, "ABS_COUNT"),
+            Self::RelTime => write!(f, "TRACK_NR"),
+            Self::TrackNr => write!(f, "REL_TIME"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -197,7 +235,7 @@ mod tests {
             AVTransport::SetAVTransportURI(set) => set,
             _ => panic!("Expected SetAVTransportURI variant"),
         };
-        assert_eq!(set_action.instance_id, "0");
+        assert_eq!(set_action.instance_id, 0);
         assert_eq!(set_action.current_uri, "http://example.com/sample.mp4?param1=a&param2=b");
         assert_eq!(set_action.current_uri_meta_data, "");
     }
@@ -209,7 +247,7 @@ mod tests {
             AVTransport::SetNextAVTransportURI(set) => set,
             _ => panic!("Expected SetNextAVTransportURI variant"),
         };
-        assert_eq!(set_action.instance_id, "0");
+        assert_eq!(set_action.instance_id, 0);
         assert_eq!(set_action.next_uri, "http://example.com/sample.mp4?param1=a&param2=b");
         assert_eq!(set_action.next_uri_meta_data, "");
     }
@@ -221,7 +259,7 @@ mod tests {
             AVTransport::GetMediaInfo(get) => get,
             _ => panic!("Expected GetMediaInfo variant"),
         };
-        assert_eq!(get_action.instance_id, "0");
+        assert_eq!(get_action.instance_id, 0);
     }
 
     #[test]
@@ -231,7 +269,7 @@ mod tests {
             AVTransport::GetTransportInfo(get) => get,
             _ => panic!("Expected GetTransportInfo variant"),
         };
-        assert_eq!(get_action.instance_id, "0");
+        assert_eq!(get_action.instance_id, 0);
     }
 
     // Other tests for GetPositionInfo, GetDeviceCapabilities, GetTransportSettings, Stop, Pause, Next, Previous, and GetCurrentTransportActions would follow a similar pattern, thus skipping them for brevity.
@@ -243,8 +281,8 @@ mod tests {
             AVTransport::Play(play) => play,
             _ => panic!("Expected Play variant"),
         };
-        assert_eq!(play_action.instance_id, "0");
-        assert_eq!(play_action.speed, "1");
+        assert_eq!(play_action.instance_id, 0);
+        assert_eq!(play_action.speed, PlaySpeed::One);
     }
 
     #[test]
@@ -254,8 +292,8 @@ mod tests {
             AVTransport::Seek(seek) => seek,
             _ => panic!("Expected Seek variant"),
         };
-        assert_eq!(seek_action.instance_id, "0");
+        assert_eq!(seek_action.instance_id, 0);
         assert_eq!(seek_action.target, "12");
-        assert_eq!(seek_action.unit, "REL_TIME");
+        assert_eq!(seek_action.unit, SeekUnit::RelTime);
     }
 }
