@@ -1,4 +1,4 @@
-description = "\u001b[1;36mdlna-dmr\u001b[22;39m: DLMA Digital Media Renderer"
+description = "\u001b[1;36mdlna-dmr\u001b[22;39m: A dummy DLNA Digital Media Renderer"
 
 [[recipes]]
 names = ["build", "b"]

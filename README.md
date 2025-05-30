@@ -32,13 +32,15 @@ cargo install dlna-dmr
 
 ```shell
 $ dlna-dmr
-[2025-05-29T10:05:46Z INFO  dlna_dmr] DMR started
-[2025-05-29T10:05:46Z INFO  dlna_dmr::ssdp] SSDP server running on 172.31.117.144:1900
-[2025-05-29T10:05:46Z INFO  dlna_dmr::http] HTTP server listening on 172.31.117.144:8080
-[2025-05-29T10:06:19Z INFO  dlna_dmr::http] Current URI: https://example.com/media.mp4
-^C[2025-05-29T10:06:29Z INFO  dlna_dmr::http] HTTP server stopped
-[2025-05-29T10:06:29Z INFO  dlna_dmr::ssdp] SSDP server stopped
-[2025-05-29T10:06:29Z INFO  dlna_dmr] DMR stopped
+[2025-05-30T14:49:48Z INFO  dlna_dmr] DMR started
+[2025-05-30T14:49:48Z INFO  dlna_dmr::ssdp] SSDP server running on 172.31.117.144:1900
+[2025-05-30T14:49:48Z INFO  dlna_dmr::http] HTTP server listening on 172.31.117.144:8080
+[2025-05-30T14:50:11Z INFO  dlna_dmr::http] RenderingControl::SetMute channel: Master, desired_mute: false
+[2025-05-30T14:50:38Z INFO  dlna_dmr::http] AVTransport::SetAvTransportUri current_uri: http://example.com/sample.mp4?param1=a&param2=b
+^C
+[2025-05-30T14:50:46Z INFO  dlna_dmr::http] HTTP server stopped
+[2025-05-30T14:50:46Z INFO  dlna_dmr::ssdp] SSDP server stopped
+[2025-05-30T14:50:46Z INFO  dlna_dmr] DMR stopped
 ```
 
 ## ✅ TODO
