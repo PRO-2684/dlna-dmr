@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// ```rust
 /// use serde::{Serialize, Deserialize};
 /// use quick_xml::de::from_str;
-/// use dlna_dmr::xml::av_transport::{AVTransportEnvelope, AVTransport};
+/// use dlna_dmr::xml::av_transport::{AVTransportEnvelope, AVTransport, PlaySpeed};
 ///
 /// let xml = r#"<?xml version="1.0"?>
 /// <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
@@ -34,7 +34,7 @@ use serde::{Deserialize, Serialize};
 ///     _ => panic!("Expected Play variant"),
 /// };
 /// assert_eq!(play_action.instance_id, 0);
-/// assert_eq!(play_action.speed, "1");
+/// assert_eq!(play_action.speed, PlaySpeed::One);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AVTransportEnvelope {
     #[serde(rename = "@encodingStyle")]
@@ -66,7 +66,7 @@ pub struct SBody {
 ///
 /// ```rust
 /// use serde::{Serialize, Deserialize};
-/// use dlna_dmr::xml::av_transport::AVTransport;
+/// use dlna_dmr::xml::av_transport::{AVTransport, PlaySpeed};
 ///
 /// let xml = r#"<?xml version="1.0"?>
 /// <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
@@ -84,7 +84,7 @@ pub struct SBody {
 ///     _ => panic!("Expected Play variant"),
 /// };
 /// assert_eq!(play_action.instance_id, 0);
-/// assert_eq!(play_action.speed, "1");
+/// assert_eq!(play_action.speed, PlaySpeed::One);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AVTransport {
     SetAVTransportURI(SetAVTransportURI),
