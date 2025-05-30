@@ -4,9 +4,14 @@ use super::{DMROptions, extract};
 use log::{debug, error, info};
 use quick_xml::escape::escape;
 use std::{
-    fmt::Display, io::{Cursor, Result}, net::SocketAddrV4, sync::{
-        atomic::{AtomicBool, Ordering}, Arc
-    }, thread
+    fmt::Display,
+    io::{Cursor, Result},
+    net::SocketAddrV4,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
 };
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
@@ -58,7 +63,7 @@ impl HTTPServer {
 
     /// Creates a new HTTP server with the given options.
     pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
-        let address = SocketAddrV4::new(*options.address.ip(), options.http_port);
+        let address = SocketAddrV4::new(options.ip, options.http_port);
         let server = Server::http(address).expect("Failed to create HTTP server");
         Self {
             server,

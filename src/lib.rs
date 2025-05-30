@@ -16,20 +16,22 @@ use log::info;
 use ssdp::SSDPServer;
 use std::{
     io::Result,
-    net::{IpAddr, SocketAddrV4},
-    sync::{Arc, atomic::AtomicBool},
+    net::{IpAddr, Ipv4Addr, SocketAddrV4},
+    sync::{atomic::AtomicBool, Arc},
 };
 use xml::extract;
 
 /// Options for creating a new [`DMR`] instance.
 #[derive(Debug, Clone)]
 pub struct DMROptions {
-    /// The SSDP server address.
-    pub address: SocketAddrV4,
+    /// Local IP.
+    pub ip: Ipv4Addr,
+    /// The SSDP server port.
+    pub ssdp_port: u16,
+    /// The HTTP server port.
+    pub http_port: u16,
     /// The UUID of the DMR instance.
     pub uuid: String,
-    /// The HTTP port for the DMR instance.
-    pub http_port: u16,
     /// Friendly name of the DMR instance.
     pub friendly_name: String,
     /// Model name of the DMR instance.
@@ -49,18 +51,16 @@ pub struct DMROptions {
 impl Default for DMROptions {
     /// Creates a default set of options for the DMR instance.
     fn default() -> Self {
-        let address = local_ip().expect("Failed to get local IP address");
-        let address = match address {
-            IpAddr::V4(address) => SocketAddrV4::new(address, 1900),
-            IpAddr::V6(_) => {
-                panic!("IPv6 is not supported for SSDP in this implementation");
-            }
+        let ip = local_ip().expect("Failed to get local IP address");
+        let IpAddr::V4(ip) = ip else {
+            panic!("IPv6 is not supported");
         };
         let uuid = uuid::Uuid::new_v4().to_string();
         Self {
-            address,
-            uuid,
+            ip,
+            ssdp_port: 1900,
             http_port: 8080, // Default HTTP port
+            uuid,
             friendly_name: "Dummy Renderer".to_string(),
             model_name: "Dummy Model".to_string(),
             model_description: "A dummy DLNA DMR".to_string(),
@@ -87,8 +87,9 @@ impl DMR {
     ///
     /// Panics if the SSDP server cannot be created, like socket binding failure.
     pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
+        let address = SocketAddrV4::new(options.ip, options.ssdp_port);
         let ssdp = SSDPServer::new(
-            options.address,
+            address,
             options.uuid.clone(),
             options.http_port,
             running.clone(),
