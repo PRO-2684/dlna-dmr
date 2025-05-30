@@ -1,6 +1,6 @@
 //! SSDP-related code.
 
-use log::{debug, error, info};
+use log::{error, info, trace};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::{
     io::{Error, ErrorKind, Result},
@@ -168,7 +168,7 @@ impl SSDPServer {
             Self::SSDP_SERVER_NAME,
             chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT")
         );
-        debug!("Sending SSDP response to {address}: {response}");
+        trace!("Sending SSDP response to {address}: {response}");
         self.socket
             .send_to(response.as_bytes(), &SockAddr::from(address))?;
 
@@ -191,7 +191,7 @@ impl SSDPServer {
                         error!("Received non-IPv4 address: {addr:?}");
                         continue;
                     };
-                    debug!("Received SSDP message from {ipv4}: {message}");
+                    trace!("Received SSDP message from {ipv4}: {message}");
                     if let Err(e) = self.answer(ipv4, &message) {
                         error!("Error answering SSDP message: {e}");
                     }

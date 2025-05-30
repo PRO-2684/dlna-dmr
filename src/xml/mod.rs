@@ -11,20 +11,35 @@ pub fn extract(path: &str, text: &str) -> Vec<String> {
     let mut result = Vec::new();
     match path {
         "/AVTransport" => {
-            // let deserialized: AVTransportEnvelope = deserialize(text);
             match deserialize::<AVTransportEnvelope>(text) {
                 Ok(deserialized) => {
-                    match deserialized.value() {
-                        AVTransport::USetAvTransportUri(set) => {
-                            result.push(format!("AVTransport::USetAvTransportUri current_uri: {}", set.current_uri));
+                    match deserialized.into_inner() {
+                        AVTransport::SetAVTransportURI(set) => {
+                            result.push(format!("AVTransport::SetAvTransportUri current_uri: {}", set.current_uri));
                         },
-                        AVTransport::UPlay(play) => {
-                            result.push(format!("AVTransport::UPlay speed: {}", play.speed));
+                        AVTransport::SetNextAVTransportURI(set) => {
+                            result.push(format!("AVTransport::SetNextAvTransportUri next_uri: {}", set.next_uri));
                         },
+                        AVTransport::Stop(_) => {
+                            result.push("AVTransport::Stop".to_string());
+                        },
+                        AVTransport::Play(play) => {
+                            result.push(format!("AVTransport::Play speed: {}", play.speed));
+                        },
+                        AVTransport::Pause(_) => {
+                            result.push("AVTransport::Pause".to_string());
+                        },
+                        AVTransport::Next(_) => {
+                            result.push("AVTransport::Next".to_string());
+                        },
+                        AVTransport::Previous(_) => {
+                            result.push("AVTransport::Previous".to_string());
+                        },
+                        _ => {}
                     }
                 },
                 Err(e) => {
-                    warn!("Failed to deserialize XML: {e}");
+                    warn!("Failed to deserialize `/AVTransport` XML: {e}");
                 },
             }
         },

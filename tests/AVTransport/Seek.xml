@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <s:Body>
+        <u:Seek xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+            <Target>12</Target>
+            <Unit>REL_TIME</Unit>
+            <!-- ABS_COUNT, TRACK_NR, REL_TIME -->
+            <InstanceID>0</InstanceID>
+        </u:Seek>
+    </s:Body>
+</s:Envelope>
