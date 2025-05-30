@@ -168,7 +168,7 @@ pub struct GetMute {
     pub instance_id: u32,
 }
 
-/// Possible values for channels in TODO: ...
+/// Possible values for channels in `GetMute`, `SetMute`, `GetVolume`, and `SetVolume` actions.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Channel {
     /// The Master channel is a logical channel and, therefore, has no spatial position associated with it.
