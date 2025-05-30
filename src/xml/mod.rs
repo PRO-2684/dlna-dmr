@@ -6,6 +6,7 @@ pub mod rendering_control;
 
 use super::Endpoint;
 use av_transport::AVTransport;
+use rendering_control::RenderingControl;
 use log::warn;
 use std::str::FromStr;
 
@@ -33,6 +34,27 @@ pub fn extract(path: Endpoint, text: &str) -> Option<String> {
             Err(e) => {
                 warn!("Failed to deserialize `/AVTransport` XML: {e}");
                 None
+            }
+        },
+        Endpoint::RenderingControl => match RenderingControl::from_str(text) {
+            Ok(rendering_control) => match rendering_control {
+                RenderingControl::SelectPreset(select) => Some(format!(
+                    "RenderingControl::SelectPreset preset: {}",
+                    select.preset_name
+                )),
+                RenderingControl::SetMute(set) => Some(format!(
+                    "RenderingControl::SetMute channel: {}, desired_mute: {}",
+                    set.channel, set.desired_mute
+                )),
+                RenderingControl::SetVolume(set) => Some(format!(
+                    "RenderingControl::SetVolume channel: {}, desired_volume: {}",
+                    set.channel, set.desired_volume
+                )),
+                _ => None,
+            },
+            Err(e) => {
+                warn!("Failed to deserialize `/RenderingControl` XML: {e}");
+                return None;
             }
         },
         _ => None,
