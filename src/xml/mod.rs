@@ -6,11 +6,13 @@ use av_transport::{AVTransport, AVTransportEnvelope};
 use log::warn;
 use quick_xml::de::from_str as deserialize;
 
+use super::Endpoint;
+
 /// Extracts potentially useful information from given text.
 #[must_use]
-pub fn extract(path: &str, text: &str) -> Option<String> {
+pub fn extract(path: Endpoint, text: &str) -> Option<String> {
     match path {
-        "/AVTransport" => match deserialize::<AVTransportEnvelope>(text) {
+        Endpoint::AVTransport => match deserialize::<AVTransportEnvelope>(text) {
             Ok(deserialized) => match deserialized.into_inner() {
                 AVTransport::SetAVTransportURI(set) => Some(format!(
                     "AVTransport::SetAvTransportUri current_uri: {}",

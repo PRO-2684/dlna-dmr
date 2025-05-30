@@ -4,13 +4,9 @@ use super::{DMROptions, extract};
 use log::{debug, error, info};
 use quick_xml::escape::escape;
 use std::{
-    io::{Cursor, Result},
-    net::SocketAddrV4,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    thread,
+    fmt::Display, io::{Cursor, Result}, net::SocketAddrV4, sync::{
+        atomic::{AtomicBool, Ordering}, Arc
+    }, thread
 };
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
@@ -21,6 +17,40 @@ pub struct HTTPServer {
     server: Server,
     options: DMROptions,
     running: Arc<AtomicBool>,
+}
+
+/// Valid endpoints.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Endpoint {
+    DeviceSpec,
+    RenderingControl,
+    AVTransport,
+    Ignore,
+}
+
+impl Endpoint {
+    /// Try to match given string with an endpoint.
+    pub fn match_str(path: &str) -> Option<Self> {
+        match path {
+            "/DeviceSpec" => Some(Self::DeviceSpec),
+            "/RenderingControl" => Some(Self::RenderingControl),
+            "/AVTransport" => Some(Self::AVTransport),
+            "/Ignore" => Some(Self::Ignore),
+            _ => None,
+        }
+    }
+}
+
+impl Display for Endpoint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::DeviceSpec => "/DeviceSpec",
+            Self::RenderingControl => "/RenderingControl",
+            Self::AVTransport => "/AVTransport",
+            Self::Ignore => "/Ignore",
+        };
+        write!(f, "{s}")
+    }
 }
 
 impl HTTPServer {
@@ -75,35 +105,30 @@ impl HTTPServer {
                 );
             }
         };
-        let path = request.url();
-        let response = match path {
-            // Posting to valid endpoints
-            "/DeviceSpec" | "/RenderingControl" | "/AVTransport" | "/Ignore" if is_post => {
-                Self::post_all(request)?;
-                return Ok(());
-            }
-            // Handle GET requests for valid endpoints
-            "/DeviceSpec" => self.get_device_spec(),
-            "/RenderingControl" => Self::get_rendering_control(),
-            "/AVTransport" => Self::get_av_transport(),
-            "/Ignore" => Self::get_ignore(),
-            // Handle invalid paths
-            _ => Self::not_found(),
+        let Some(endpoint) = Endpoint::match_str(request.url()) else {
+            return request.respond(Self::not_found());
         };
-        // debug!("Responding to request: {response:?}");
+        if is_post {
+            return Self::post_all(endpoint, request);
+        }
+        let response = match endpoint {
+            Endpoint::DeviceSpec => self.get_device_spec(),
+            Endpoint::RenderingControl => Self::get_rendering_control(),
+            Endpoint::AVTransport => Self::get_av_transport(),
+            Endpoint::Ignore => Self::get_ignore(),
+        };
         request.respond(response)
     }
 
     /// Handles POST requests for all valid endpoints.
-    fn post_all(mut request: Request) -> Result<()> {
+    fn post_all(endpoint: Endpoint, mut request: Request) -> Result<()> {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
-        let path = request.url();
-        if let Some(text) = extract(path, &body) {
+        if let Some(text) = extract(endpoint, &body) {
             info!("{text}");
         }
 
-        debug!("POST {path}\n{body}");
+        debug!("POST {endpoint}\n{body}");
 
         let response =
             Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));

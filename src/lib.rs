@@ -10,7 +10,7 @@ mod http;
 mod ssdp;
 pub mod xml;
 
-use http::HTTPServer;
+use http::{Endpoint, HTTPServer};
 use local_ip_address::local_ip;
 use log::info;
 use ssdp::SSDPServer;
