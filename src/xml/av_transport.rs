@@ -1,6 +1,6 @@
-//! Module for deserializing and extracting information from `AVTransport` XML messages. See [`AVTransportEnvelope`] and [`AVTransport`] for more details.
-
-#![allow(missing_docs, reason = "Fields are self-explanatory")]
+//! Module for deserializing and extracting information from `AVTransport` XML messages.
+//!
+//! See [`AVTransportEnvelope`] and [`AVTransport`] for more details. Documentation on `AVTransport` v1 can be found [here](https://www.upnp.org/specs/av/UPnP-av-AVTransport-v1-Service.pdf).
 
 use std::fmt::Display;
 
@@ -35,6 +35,7 @@ use serde::{Deserialize, Serialize};
 /// };
 /// assert_eq!(play_action.instance_id, 0);
 /// assert_eq!(play_action.speed, PlaySpeed::One);
+#[allow(missing_docs, reason = "Wrapper struct")]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct AVTransportEnvelope {
     #[serde(rename = "@encodingStyle")]
@@ -54,6 +55,7 @@ impl AVTransportEnvelope {
 }
 
 /// Container structure.
+#[allow(missing_docs, reason = "Wrapper struct")]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SBody {
     #[serde(rename = "$value")]
@@ -87,19 +89,35 @@ pub struct SBody {
 /// assert_eq!(play_action.speed, PlaySpeed::One);
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AVTransport {
+    /// Specifies the URI of the resource to be controlled by the specified AVTransport instance.
     SetAVTransportURI(SetAVTransportURI),
+    /// Specifies the URI of the resource to be controlled when the playback of the current resource (set earlier via SetAVTransportURI) finishes.
     SetNextAVTransportURI(SetNextAVTransportURI),
+    /// Returns information associated with the current media of the specified instance; it has no effect on state.
     GetMediaInfo(Simple),
+    /// Returns information associated with the current transport state of the specified instance; it has no effect on state.
     GetTransportInfo(Simple),
+    /// Returns information associated with the current position of the transport of the specified instance; it has no effect on state.
     GetPositionInfo(Simple),
+    /// Returns information on device capabilities of the specified instance, such as the supported playback and recording formats, and the supported quality levels for recording. This action has no effect on state.
     GetDeviceCapabilities(Simple),
+    /// Returns information on various settings of the specified instance, such as the current play mode and the current recording quality mode.This action has no effect on state.
     GetTransportSettings(Simple),
+    /// Stops the progression of the current resource that is associated with the specified instance.
     Stop(Simple),
+    /// Start playing the resource of the specified instance, at the specified speed, starting at the current position, according to the current play mode.
     Play(Play),
+    /// While the device is in a playing state, e.g. TransportState is “PLAYING”, this action halts the progression of the resource that is associated with the specified instance Id.
     Pause(Simple),
+    // TODO: Record?
+    /// Start seeking through the resource controlled by the specified instance - as fast as possible - to the specified target position.
     Seek(Seek),
+    /// Convenient action to advance to the next track.
     Next(Simple),
+    /// Convenient action to advance to the previous track.
     Previous(Simple),
+    // TODO: SetPlayMode, SetRecordQualityMode?
+    /// Returns the CurrentTransportActions state variable for the specified instance.
     GetCurrentTransportActions(Simple),
 }
 
@@ -112,66 +130,82 @@ impl std::str::FromStr for AVTransport {
     }
 }
 
-/// Arguments for the `SetAVTransportURI` action in [`AVTransport`].
+/// Arguments for [`AVTransport::SetAVTransportURI`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetAVTransportURI {
+    /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
+    /// The virtual instance of the AVTransport service to which the action applies
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
+    /// The URI of the resource to be controlled by the specified AVTransport instance.
     #[serde(rename = "CurrentURI")]
     pub current_uri: String,
+    /// Meta data associated with the specified resource, using a DIDL-Lite XML fragment.
     #[serde(rename = "CurrentURIMetaData")]
     pub current_uri_meta_data: String,
 }
 
-/// Arguments for the `SetNextAVTransportURI` action in [`AVTransport`].
+/// Arguments for [`AVTransport::SetNextAVTransportURI`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetNextAVTransportURI {
+    /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
+    /// The virtual instance of the AVTransport service to which the action applies
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
+    /// The URI of the resource to be controlled when the playback of the current resource (set earlier via SetAVTransportURI) finishes.
     #[serde(rename = "NextURI")]
     pub next_uri: String,
+    /// Meta data associated with the specified resource, using a DIDL-Lite XML fragment.
     #[serde(rename = "NextURIMetaData")]
     pub next_uri_meta_data: String,
 }
 
 /// A single `instance_id` argument. For the following actions in [`AVTransport`]:
 ///
-/// - `GetMediaInfo`
-/// - `GetTransportInfo`
-/// - `GetPositionInfo`
-/// - `GetDeviceCapabilities`
-/// - `GetTransportSettings`
-/// - `Stop`
-/// - `Pause`
-/// - `Next`
-/// - `Previous`
-/// - `GetCurrentTransportActions`
+/// - [`AVTransport::GetMediaInfo`]
+/// - [`AVTransport::GetTransportInfo`]
+/// - [`AVTransport::GetPositionInfo`]
+/// - [`AVTransport::GetDeviceCapabilities`]
+/// - [`AVTransport::GetTransportSettings`]
+/// - [`AVTransport::Stop`]
+/// - [`AVTransport::Pause`]
+/// - [`AVTransport::Next`]
+/// - [`AVTransport::Previous`]
+/// - [`AVTransport::GetCurrentTransportActions`]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Simple {
+    /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
+    /// The virtual instance of the AVTransport service to which the action applies
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
 
-/// Arguments for the `Play` action in [`AVTransport`].
+/// Arguments for [`AVTransport::Play`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Play {
+    /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
+    /// The speed at which to play the resource.
     #[serde(rename = "Speed")]
     pub speed: PlaySpeed,
+    /// The virtual instance of the AVTransport service to which the action applies
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
 
-/// Possible values for the [`speed`](`Play::speed`) field of the [`Play`] action in [`AVTransport`].
+/// Possible values for the [`speed`](`Play::speed`) field of [`Play`].
+///
+/// Only `1` is currently supported, which means normal speed playback.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlaySpeed {
+    /// Normal speed playback.
     #[serde(rename = "1")]
     One,
 }
@@ -184,28 +218,36 @@ impl Display for PlaySpeed {
     }
 }
 
-/// Arguments for the `Seek` action in [`AVTransport`].
+/// Arguments for [`AVTransport::Seek`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Seek {
+    /// The XML namespace for the AVTransport service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
+    /// The target position of the seek action, in terms of units defined by the [`unit`](`Seek::unit`) field.
     #[serde(rename = "Target")]
     pub target: String,
+    /// The unit in which the amount of seeking to be performed is specified.
     #[serde(rename = "Unit")]
     pub unit: SeekUnit,
+    /// The virtual instance of the AVTransport service to which the action applies
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
 
-/// Possible values for the [`unit`](`Seek::unit`) field of the [`Seek`] action in [`AVTransport`].
+/// Possible values for the [`unit`](`Seek::unit`) field of [`Seek`].
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeekUnit {
+    /// Seeking to absolute count.
     #[serde(rename = "ABS_COUNT")]
     AbsCount,
+    /// Seeking to a particular track number.
     #[serde(rename = "TRACK_NR")]
     TrackNr,
+    /// Seeking by relative time.
     #[serde(rename = "REL_TIME")]
     RelTime,
+    // TODO: The rest?
 }
 
 impl Display for SeekUnit {

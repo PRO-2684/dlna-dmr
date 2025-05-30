@@ -2,6 +2,7 @@
 
 // Schemas - Generated via [xml_schema_generator](https://thomblin.github.io/xml_schema_generator/)
 pub mod av_transport;
+pub mod rendering_control;
 use av_transport::{AVTransport, AVTransportEnvelope};
 use log::warn;
 use quick_xml::de::from_str as deserialize;
