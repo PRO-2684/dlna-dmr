@@ -82,7 +82,10 @@ pub trait DMR: HTTPServer {
     /// use std::sync::atomic::Ordering;
     /// running.store(false, Ordering::SeqCst);
     /// ```
-    fn run(&self, options: DMROptions, running: Arc<AtomicBool>) where Self: Sync {
+    fn run(&self, options: DMROptions, running: Arc<AtomicBool>)
+    where
+        Self: Sync,
+    {
         let address = SocketAddrV4::new(options.ip, options.ssdp_port);
         let ssdp = SSDPServer::new(
             address,

@@ -1,12 +1,22 @@
 //! HTTP-related code.
 
-use super::{DMROptions, xml::{av_transport::AVTransport, rendering_control::RenderingControl}};
+use super::{
+    DMROptions,
+    xml::{av_transport::AVTransport, rendering_control::RenderingControl},
+};
 use log::{debug, error, info};
-use quick_xml::{escape::escape, DeError};
+use quick_xml::{DeError, escape::escape};
 use std::{
-    fmt::Display, io::{Cursor, Result as IoResult}, net::SocketAddrV4, str::FromStr, sync::{
-        atomic::{AtomicBool, Ordering}, Arc
-    }, thread, time::Duration
+    fmt::Display,
+    io::{Cursor, Result as IoResult},
+    net::SocketAddrV4,
+    str::FromStr,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+    thread,
+    time::Duration,
 };
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
 
@@ -115,7 +125,9 @@ pub trait HTTPServer {
 
         let response = match endpoint {
             Endpoint::DeviceSpec => Self::post_device_spec(self),
-            Endpoint::RenderingControl => Self::post_rendering_control(self, RenderingControl::from_str(&body)),
+            Endpoint::RenderingControl => {
+                Self::post_rendering_control(self, RenderingControl::from_str(&body))
+            }
             Endpoint::AVTransport => Self::post_av_transport(self, AVTransport::from_str(&body)),
             Endpoint::Ignore => Self::post_ignore(self),
         };
@@ -133,14 +145,23 @@ pub trait HTTPServer {
     }
 
     /// Handles POST requests for `/RenderingControl`.
-    #[allow(unused_variables, reason = "This is a dummy trait method, intended to be overridden")]
-    fn post_rendering_control(&self, rendering_control: Result<RenderingControl, DeError>) -> Response {
+    #[allow(
+        unused_variables,
+        reason = "This is a dummy trait method, intended to be overridden"
+    )]
+    fn post_rendering_control(
+        &self,
+        rendering_control: Result<RenderingControl, DeError>,
+    ) -> Response {
         // Method not allowed
         Response::from_string("").with_status_code(StatusCode(405))
     }
 
     /// Handles POST requests for `/AVTransport`.
-    #[allow(unused_variables, reason = "This is a dummy trait method, intended to be overridden")]
+    #[allow(
+        unused_variables,
+        reason = "This is a dummy trait method, intended to be overridden"
+    )]
     fn post_av_transport(&self, av_transport: Result<AVTransport, DeError>) -> Response {
         // Method not allowed
         Response::from_string("").with_status_code(StatusCode(405))
