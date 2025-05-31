@@ -2,7 +2,6 @@
 //!
 //! See [`AVTransportEnvelope`] and [`AVTransport`] for more details. Documentation on `AVTransport` v1 can be found [here](https://www.upnp.org/specs/av/UPnP-av-AVTransport-v1-Service.pdf).
 
-use super::ActionSummary;
 use quick_xml::{DeError, de};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
@@ -125,27 +124,6 @@ impl FromStr for AVTransport {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let envelope: AVTransportEnvelope = de::from_str(s)?;
         Ok(envelope.into_inner())
-    }
-}
-
-impl ActionSummary for AVTransport {
-    fn summary(&self) -> Option<String> {
-        match self {
-            Self::SetAVTransportURI(set) => Some(format!(
-                "AVTransport::SetAvTransportUri current_uri: {}",
-                set.current_uri
-            )),
-            Self::SetNextAVTransportURI(set) => Some(format!(
-                "AVTransport::SetNextAvTransportUri next_uri: {}",
-                set.next_uri
-            )),
-            Self::Stop(_) => Some("AVTransport::Stop".to_string()),
-            Self::Play(play) => Some(format!("AVTransport::Play speed: {}", play.speed)),
-            Self::Pause(_) => Some("AVTransport::Pause".to_string()),
-            Self::Next(_) => Some("AVTransport::Next".to_string()),
-            Self::Previous(_) => Some("AVTransport::Previous".to_string()),
-            _ => None,
-        }
     }
 }
 

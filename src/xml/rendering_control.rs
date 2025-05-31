@@ -2,7 +2,6 @@
 //!
 //! Documentation on `RenderingControl` v1 can be found [here](http://upnp.org/specs/av/UPnP-av-RenderingControl-v1-Service.pdf).
 
-use super::ActionSummary;
 use quick_xml::{DeError, de};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr};
@@ -110,26 +109,6 @@ impl FromStr for RenderingControl {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let envelope: RenderingControlEnvelope = de::from_str(s)?;
         Ok(envelope.into_inner())
-    }
-}
-
-impl ActionSummary for RenderingControl {
-    fn summary(&self) -> Option<String> {
-        match self {
-            Self::SelectPreset(select) => Some(format!(
-                "RenderingControl::SelectPreset preset: {}",
-                select.preset_name
-            )),
-            Self::SetMute(set) => Some(format!(
-                "RenderingControl::SetMute channel: {}, desired_mute: {}",
-                set.channel, set.desired_mute
-            )),
-            Self::SetVolume(set) => Some(format!(
-                "RenderingControl::SetVolume channel: {}, desired_volume: {}",
-                set.channel, set.desired_volume
-            )),
-            _ => None,
-        }
     }
 }
 

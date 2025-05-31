@@ -1,28 +1,14 @@
 //! HTTP-related code.
 
-use super::{DMROptions, extract};
+use super::{DMROptions, xml::{av_transport::AVTransport, rendering_control::RenderingControl}};
 use log::{debug, error, info};
-use quick_xml::escape::escape;
+use quick_xml::{escape::escape, DeError};
 use std::{
-    fmt::Display,
-    io::{Cursor, Result},
-    net::SocketAddrV4,
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    thread,
+    fmt::Display, io::{Cursor, Result as IoResult}, net::SocketAddrV4, str::FromStr, sync::{
+        atomic::{AtomicBool, Ordering}, Arc
+    }, thread, time::Duration
 };
 use tiny_http::{Header, Method, Request, Response as GenericResponse, Server, StatusCode};
-
-type Response = GenericResponse<Cursor<Vec<u8>>>;
-
-/// A simple HTTP server for handling DLNA DMR related requests.
-pub struct HTTPServer {
-    server: Server,
-    options: DMROptions,
-    running: Arc<AtomicBool>,
-}
 
 /// Valid endpoints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -58,47 +44,43 @@ impl Display for Endpoint {
     }
 }
 
-impl HTTPServer {
-    // Create, run, and stop the HTTP server.
+/// Response type.
+pub type Response = GenericResponse<Cursor<Vec<u8>>>;
 
-    /// Creates a new HTTP server with the given options.
-    pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
+/// A trait for handling HTTP requests for a DLNA DMR (Digital Media Renderer).
+///
+/// Usually, you'll need to override [`post_rendering_control`](HTTPServer::post_rendering_control) and [`post_av_transport`](HTTPServer::post_av_transport) to implement your own handlers. You may override other methods for more control.
+pub trait HTTPServer {
+    /// Create and run a HTTP server with the given options and running signal, blocking current thread.
+    fn run_http(&self, options: DMROptions, running: Arc<AtomicBool>) {
         let address = SocketAddrV4::new(options.ip, options.http_port);
         let server = Server::http(address).expect("Failed to create HTTP server");
-        Self {
-            server,
-            options,
-            running,
-        }
-    }
 
-    /// Runs the HTTP server, listening for requests.
-    pub fn run(&self) {
-        info!("HTTP server listening on {}", self.server.server_addr());
-        while self.running.load(Ordering::SeqCst) {
-            match self.server.try_recv() {
+        info!("HTTP server listening on {}", server.server_addr());
+        while running.load(Ordering::SeqCst) {
+            match server.try_recv() {
                 Ok(Some(request)) => {
-                    if let Err(e) = self.handle_request(request) {
+                    if let Err(e) = Self::handle_request(&self, &options, request) {
                         error!("Error handling request: {e}");
                     }
                 }
                 Ok(None) => {
                     // No request received, continue to the next iteration
-                    thread::yield_now();
+                    thread::sleep(Duration::from_millis(100));
                 }
                 Err(e) => {
                     error!("Error receiving request: {e}");
                 }
             }
         }
-        self.server.unblock(); // Unblock the server to stop it gracefully.
+        server.unblock(); // Unblock the server to stop it gracefully.
         info!("HTTP server stopped");
     }
 
-    // Request handling methods.
+    // Request handling.
 
     /// Handles a given request and returns a response.
-    fn handle_request(&self, request: Request) -> Result<()> {
+    fn handle_request(&self, options: &DMROptions, request: Request) -> IoResult<()> {
         debug!("Received request: {request:?}");
         let method = request.method();
         let is_post = match method {
@@ -111,13 +93,13 @@ impl HTTPServer {
             }
         };
         let Some(endpoint) = Endpoint::match_str(request.url()) else {
-            return request.respond(Self::not_found());
+            return request.respond(Response::from_string("").with_status_code(StatusCode(404)));
         };
         if is_post {
-            return Self::post_all(endpoint, request);
+            return Self::handle_post(&self, endpoint, request);
         }
         let response = match endpoint {
-            Endpoint::DeviceSpec => self.get_device_spec(),
+            Endpoint::DeviceSpec => Self::get_device_spec(options),
             Endpoint::RenderingControl => Self::get_rendering_control(),
             Endpoint::AVTransport => Self::get_av_transport(),
             Endpoint::Ignore => Self::get_ignore(),
@@ -125,29 +107,59 @@ impl HTTPServer {
         request.respond(response)
     }
 
-    /// Handles POST requests for all valid endpoints.
-    fn post_all(endpoint: Endpoint, mut request: Request) -> Result<()> {
+    /// Handles POST requests for valid endpoints.
+    fn handle_post(&self, endpoint: Endpoint, mut request: Request) -> IoResult<()> {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
-        if let Some(text) = extract(endpoint, &body) {
-            info!("{text}");
-        }
-
         debug!("POST {endpoint}\n{body}");
 
-        let response =
-            Response::from_string("Invalid InstanceID").with_status_code(StatusCode(718));
+        let response = match endpoint {
+            Endpoint::DeviceSpec => Self::post_device_spec(self),
+            Endpoint::RenderingControl => Self::post_rendering_control(self, RenderingControl::from_str(&body)),
+            Endpoint::AVTransport => Self::post_av_transport(self, AVTransport::from_str(&body)),
+            Endpoint::Ignore => Self::post_ignore(self),
+        };
         request.respond(response)?;
 
         Ok(())
     }
 
+    // POST Request handlers for specific endpoints.
+
+    /// Handles POST requests for `/DeviceSpec`.
+    fn post_device_spec(&self) -> Response {
+        // Method not allowed
+        Response::from_string("").with_status_code(StatusCode(405))
+    }
+
+    /// Handles POST requests for `/RenderingControl`.
+    #[allow(unused_variables, reason = "This is a dummy trait method, intended to be overridden")]
+    fn post_rendering_control(&self, rendering_control: Result<RenderingControl, DeError>) -> Response {
+        // Method not allowed
+        Response::from_string("").with_status_code(StatusCode(405))
+    }
+
+    /// Handles POST requests for `/AVTransport`.
+    #[allow(unused_variables, reason = "This is a dummy trait method, intended to be overridden")]
+    fn post_av_transport(&self, av_transport: Result<AVTransport, DeError>) -> Response {
+        // Method not allowed
+        Response::from_string("").with_status_code(StatusCode(405))
+    }
+
+    /// Handles POST requests for `/Ignore`.
+    fn post_ignore(&self) -> Response {
+        // No content
+        Response::from_string("").with_status_code(StatusCode(204))
+    }
+
+    // GET Request handlers for specific endpoints.
+
     /// Handles GET requests for `/DeviceSpec`.
-    fn get_device_spec(&self) -> Response {
-        /// Escapes given field under `self.options`.
+    fn get_device_spec(options: &DMROptions) -> Response {
+        /// Escapes given field under `options`.
         macro_rules! e {
             ($i:ident) => {
-                escape(&self.options.$i)
+                escape(&options.$i)
             };
         }
         let xml = format!(
@@ -178,13 +190,11 @@ impl HTTPServer {
 
     /// Handles GET requests for `/Ignore`.
     fn get_ignore() -> Response {
+        // No content
         Response::from_string("").with_status_code(StatusCode(204))
     }
 
-    /// Handles other requests (requests to invalid endpoints)
-    fn not_found() -> Response {
-        Response::from_string("Not Found").with_status_code(StatusCode(404))
-    }
+    // Helper methods.
 
     /// HTTP header that indicates the content type for XML responses.
     fn content_type_xml() -> Header {

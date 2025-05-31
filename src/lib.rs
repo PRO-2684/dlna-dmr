@@ -10,16 +10,14 @@ mod http;
 mod ssdp;
 pub mod xml;
 
-use http::{Endpoint, HTTPServer};
+pub use http::{HTTPServer, Response};
 use local_ip_address::local_ip;
-use log::info;
+use log::{error, info};
 use ssdp::SSDPServer;
 use std::{
-    io::Result,
     net::{IpAddr, Ipv4Addr, SocketAddrV4},
     sync::{Arc, atomic::AtomicBool},
 };
-use xml::extract;
 
 /// Options for creating a new [`DMR`] instance.
 #[derive(Debug, Clone)]
@@ -72,34 +70,9 @@ impl Default for DMROptions {
     }
 }
 
-/// A dummy DLNA DMR (Digital Media Renderer) instance.
-pub struct DMR {
-    /// The SSDP server instance.
-    ssdp: SSDPServer,
-    /// The HTTP server instance.
-    http: HTTPServer,
-}
-
-impl DMR {
-    /// Creates a new DMR instance with given options and running signal.
-    ///
-    /// ## Panics
-    ///
-    /// Panics if the SSDP server cannot be created, like socket binding failure.
-    pub fn new(options: DMROptions, running: Arc<AtomicBool>) -> Self {
-        let address = SocketAddrV4::new(options.ip, options.ssdp_port);
-        let ssdp = SSDPServer::new(
-            address,
-            options.uuid.clone(),
-            options.http_port,
-            running.clone(),
-        )
-        .expect("Failed to create SSDP server");
-        let http = HTTPServer::new(options, running);
-        Self { ssdp, http }
-    }
-
-    /// Starts the DMR instance, blocking current thread.
+/// A trait for DMR instances.
+pub trait DMR: HTTPServer {
+    /// Create and run the DMR instance, blocking current thread.
     ///
     /// ## Stopping
     ///
@@ -109,23 +82,28 @@ impl DMR {
     /// use std::sync::atomic::Ordering;
     /// running.store(false, Ordering::SeqCst);
     /// ```
-    ///
-    /// ## Errors
-    ///
-    /// Returns an error if alive notification fails.
-    pub fn start(&self) -> Result<()> {
-        self.ssdp.alive()?;
+    fn run(&self, options: DMROptions, running: Arc<AtomicBool>) where Self: Sync {
+        let address = SocketAddrV4::new(options.ip, options.ssdp_port);
+        let ssdp = SSDPServer::new(
+            address,
+            options.uuid.clone(),
+            options.http_port,
+            running.clone(),
+        )
+        .expect("Failed to create SSDP server");
+        if let Err(e) = ssdp.alive() {
+            error!("Error broadcasting alive message: {e}");
+        };
 
         // Scoped thread
         std::thread::scope(|s| {
             // Start the SSDP server
-            s.spawn(|| self.ssdp.run());
+            s.spawn(|| ssdp.run());
             // Start the HTTP server
-            s.spawn(|| self.http.run());
+            s.spawn(|| self.run_http(options, running));
             info!("DMR started");
         });
 
         info!("DMR stopped");
-        Ok(())
     }
 }
