@@ -30,6 +30,8 @@ cargo install dlna-dmr
 
 ## 📖 Usage
 
+To run the DMR, simply execute the following command in your terminal:
+
 ```shell
 $ dlna-dmr
 [2025-05-30T14:49:48Z INFO  dlna_dmr] DMR started
@@ -41,6 +43,12 @@ $ dlna-dmr
 [2025-05-30T14:50:46Z INFO  dlna_dmr::http] HTTP server stopped
 [2025-05-30T14:50:46Z INFO  dlna_dmr::ssdp] SSDP server stopped
 [2025-05-30T14:50:46Z INFO  dlna_dmr] DMR stopped
+```
+
+To configure, simply pass in a path to a configuration file:
+
+```shell
+dlna-dmr path/to/config.toml
 ```
 
 ## ✅ TODO

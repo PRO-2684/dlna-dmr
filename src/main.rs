@@ -73,7 +73,20 @@ impl DMR for DummyDMR {}
 
 fn main() -> IoResult<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
-    let options = DMROptions::default();
+
+    // Load and parse configuration
+    let config = if let Some(arg) = std::env::args().nth(1) {
+        info!("Using configuration file: {arg}");
+        std::fs::read_to_string(arg)?
+    } else {
+        info!("No configuration file provided, using default settings");
+        "".to_string()
+    };
+    let options: DMROptions = toml::from_str(&config).map_err(|e| {
+        eprintln!("Failed to parse configuration: {e}");
+        std::io::Error::new(std::io::ErrorKind::InvalidData, e)
+    })?;
+
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = running.clone();
     let dmr = DummyDMR {};
