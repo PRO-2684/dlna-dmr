@@ -51,12 +51,14 @@ To configure, simply pass in a path to a configuration file:
 dlna-dmr path/to/config.toml
 ```
 
+For more information on configuration options, see the `DMROptions` struct in [`lib.rs`](./src/lib.rs).
+
 ## ✅ TODO
 
 - [x] Actual XML parsing
+- [x] Config file
 - [ ] "Heartbeat" - send periodic alive messages to the network
 - [ ] Command line arguments parsing
-- [ ] Config file
 - [ ] Testing HTTP server via [`TestRequest`](https://docs.rs/tiny_http/0.12.0/tiny_http/struct.TestRequest.html)
 
 ## 🎉 Credits
