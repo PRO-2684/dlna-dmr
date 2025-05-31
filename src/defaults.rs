@@ -1,7 +1,7 @@
 //! Default values for [`DMROptions`](super::DMROptions).
 
-use std::net::{Ipv4Addr, IpAddr};
 use local_ip_address::local_ip;
+use std::net::{IpAddr, Ipv4Addr};
 
 /// Default IP, determined by the local machine's IP address.
 pub fn ip() -> Ipv4Addr {
@@ -13,12 +13,12 @@ pub fn ip() -> Ipv4Addr {
 }
 
 /// Default SSDP server port.
-pub fn ssdp_port() -> u16 {
+pub const fn ssdp_port() -> u16 {
     1900
 }
 
 /// Default HTTP server port.
-pub fn http_port() -> u16 {
+pub const fn http_port() -> u16 {
     8080
 }
 

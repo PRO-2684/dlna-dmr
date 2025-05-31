@@ -70,7 +70,7 @@ pub trait HTTPServer {
         while running.load(Ordering::SeqCst) {
             match server.try_recv() {
                 Ok(Some(request)) => {
-                    if let Err(e) = Self::handle_request(&self, &options, request) {
+                    if let Err(e) = Self::handle_request(self, &options, request) {
                         error!("Error handling request: {e}");
                     }
                 }
@@ -90,6 +90,10 @@ pub trait HTTPServer {
     // Request handling.
 
     /// Handles a given request and returns a response.
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if handling or responding to the request fails.
     fn handle_request(&self, options: &DMROptions, request: Request) -> IoResult<()> {
         debug!("Received request: {request:?}");
         let method = request.method();
@@ -106,7 +110,7 @@ pub trait HTTPServer {
             return request.respond(Response::from_string("").with_status_code(StatusCode(404)));
         };
         if is_post {
-            return Self::handle_post(&self, endpoint, request);
+            return Self::handle_post(self, endpoint, request);
         }
         let response = match endpoint {
             Endpoint::DeviceSpec => Self::get_device_spec(options),
@@ -118,6 +122,10 @@ pub trait HTTPServer {
     }
 
     /// Handles POST requests for valid endpoints.
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if reading the request body fails or if responding to the request fails.
     fn handle_post(&self, endpoint: Endpoint, mut request: Request) -> IoResult<()> {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
@@ -176,6 +184,7 @@ pub trait HTTPServer {
     // GET Request handlers for specific endpoints.
 
     /// Handles GET requests for `/DeviceSpec`.
+    #[must_use]
     fn get_device_spec(options: &DMROptions) -> Response {
         /// Escapes given field under `options`.
         macro_rules! e {
@@ -198,18 +207,21 @@ pub trait HTTPServer {
     }
 
     /// Handles GET requests for `/RenderingControl`.
+    #[must_use]
     fn get_rendering_control() -> Response {
         Response::from_string(include_str!("./template/RenderingControl.xml"))
             .with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/AVTransport`.
+    #[must_use]
     fn get_av_transport() -> Response {
         Response::from_string(include_str!("./template/AVTransport.xml"))
             .with_header(Self::content_type_xml())
     }
 
     /// Handles GET requests for `/Ignore`.
+    #[must_use]
     fn get_ignore() -> Response {
         // No content
         Response::from_string("").with_status_code(StatusCode(204))
@@ -218,6 +230,7 @@ pub trait HTTPServer {
     // Helper methods.
 
     /// HTTP header that indicates the content type for XML responses.
+    #[must_use]
     fn content_type_xml() -> Header {
         Header::from_bytes("Content-Type", br#"text/xml; charset="utf-8""#).unwrap()
     }

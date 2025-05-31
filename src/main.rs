@@ -7,7 +7,7 @@ use dlna_dmr::{
 use log::{info, warn};
 use quick_xml::DeError;
 use std::{
-    io::Result as IoResult,
+    io::{Error, ErrorKind, Result as IoResult},
     sync::{
         Arc,
         atomic::{AtomicBool, Ordering},
@@ -84,7 +84,7 @@ fn main() -> IoResult<()> {
     };
     let options: DMROptions = toml::from_str(&config).map_err(|e| {
         eprintln!("Failed to parse configuration: {e}");
-        std::io::Error::new(std::io::ErrorKind::InvalidData, e)
+        Error::new(ErrorKind::InvalidData, e)
     })?;
 
     let running = Arc::new(AtomicBool::new(true));

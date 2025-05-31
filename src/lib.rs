@@ -84,7 +84,7 @@ pub trait DMR: HTTPServer {
         .expect("Failed to create SSDP server");
         if let Err(e) = ssdp.alive() {
             error!("Error broadcasting alive message: {e}");
-        };
+        }
 
         // Scoped thread
         std::thread::scope(|s| {
