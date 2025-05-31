@@ -33,7 +33,7 @@ pub fn extract(path: Endpoint, text: &str) -> Option<String> {
             Ok(rendering_control) => rendering_control.summary(),
             Err(e) => {
                 warn!("Failed to deserialize `/RenderingControl` XML: {e}");
-                return None;
+                None
             }
         },
         _ => None,

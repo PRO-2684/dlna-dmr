@@ -136,10 +136,10 @@ impl ActionSummary for RenderingControl {
 /// Arguments for [`RenderingControl::ListPresets`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ListPresets {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -147,13 +147,13 @@ pub struct ListPresets {
 /// Arguments for [`RenderingControl::SelectPreset`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SelectPreset {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// Specify the name of a device preset.
     #[serde(rename = "PresetName")]
     pub preset_name: PresetName,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -170,7 +170,7 @@ pub enum PresetName {
 impl Display for PresetName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            PresetName::FactoryDefaults => write!(f, "FactoryDefaults"),
+            Self::FactoryDefaults => write!(f, "FactoryDefaults"),
         }
     }
 }
@@ -178,13 +178,13 @@ impl Display for PresetName {
 /// Arguments for [`RenderingControl::GetMute`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct GetMute {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// A particular channel of an audio output stream.
     #[serde(rename = "Channel")]
     pub channel: Channel,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -200,7 +200,7 @@ pub enum Channel {
 impl Display for Channel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Channel::Master => write!(f, "Master"),
+            Self::Master => write!(f, "Master"),
         }
     }
 }
@@ -208,7 +208,7 @@ impl Display for Channel {
 /// Arguments for [`RenderingControl::SetMute`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetMute {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// Desired Mute state.
@@ -217,7 +217,7 @@ pub struct SetMute {
     /// A particular channel of an audio output stream.
     #[serde(rename = "Channel")]
     pub channel: Channel,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -225,13 +225,13 @@ pub struct SetMute {
 /// Arguments for [`RenderingControl::GetVolume`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct GetVolume {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// A particular channel of an audio output stream.
     #[serde(rename = "Channel")]
     pub channel: Channel,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -239,7 +239,7 @@ pub struct GetVolume {
 /// Arguments for [`RenderingControl::SetVolume`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetVolume {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// Desired volume level. Should be between 0 and 100, inclusive.
@@ -248,7 +248,7 @@ pub struct SetVolume {
     /// A particular channel of an audio output stream.
     #[serde(rename = "Channel")]
     pub channel: Channel,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }

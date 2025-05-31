@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
+
 use dlna_dmr::{DMR, DMROptions};
 use std::{
     io::Result,

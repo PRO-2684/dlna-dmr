@@ -87,9 +87,9 @@ pub struct SBody {
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AVTransport {
-    /// Specifies the URI of the resource to be controlled by the specified AVTransport instance.
+    /// Specifies the URI of the resource to be controlled by the specified `AVTransport` instance.
     SetAVTransportURI(SetAVTransportURI),
-    /// Specifies the URI of the resource to be controlled when the playback of the current resource (set earlier via SetAVTransportURI) finishes.
+    /// Specifies the URI of the resource to be controlled when the playback of the current resource (set earlier via `SetAVTransportURI`) finishes.
     SetNextAVTransportURI(SetNextAVTransportURI),
     /// Returns information associated with the current media of the specified instance; it has no effect on state.
     GetMediaInfo(Simple),
@@ -105,7 +105,7 @@ pub enum AVTransport {
     Stop(Simple),
     /// Start playing the resource of the specified instance, at the specified speed, starting at the current position, according to the current play mode.
     Play(Play),
-    /// While the device is in a playing state, e.g. TransportState is “PLAYING”, this action halts the progression of the resource that is associated with the specified instance Id.
+    /// While the device is in a playing state, e.g. `TransportState` is “PLAYING”, this action halts the progression of the resource that is associated with the specified instance Id.
     Pause(Simple),
     // TODO: Record?
     /// Start seeking through the resource controlled by the specified instance - as fast as possible - to the specified target position.
@@ -115,7 +115,7 @@ pub enum AVTransport {
     /// Convenient action to advance to the previous track.
     Previous(Simple),
     // TODO: SetPlayMode, SetRecordQualityMode?
-    /// Returns the CurrentTransportActions state variable for the specified instance.
+    /// Returns the `CurrentTransportActions` state variable for the specified instance.
     GetCurrentTransportActions(Simple),
 }
 
@@ -152,13 +152,13 @@ impl ActionSummary for AVTransport {
 /// Arguments for [`AVTransport::SetAVTransportURI`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetAVTransportURI {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
-    /// The URI of the resource to be controlled by the specified AVTransport instance.
+    /// The URI of the resource to be controlled by the specified `AVTransport` instance.
     #[serde(rename = "CurrentURI")]
     pub current_uri: String,
     /// Meta data associated with the specified resource, using a DIDL-Lite XML fragment.
@@ -169,13 +169,13 @@ pub struct SetAVTransportURI {
 /// Arguments for [`AVTransport::SetNextAVTransportURI`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct SetNextAVTransportURI {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
-    /// The URI of the resource to be controlled when the playback of the current resource (set earlier via SetAVTransportURI) finishes.
+    /// The URI of the resource to be controlled when the playback of the current resource (set earlier via `SetAVTransportURI`) finishes.
     #[serde(rename = "NextURI")]
     pub next_uri: String,
     /// Meta data associated with the specified resource, using a DIDL-Lite XML fragment.
@@ -197,10 +197,10 @@ pub struct SetNextAVTransportURI {
 /// - [`AVTransport::GetCurrentTransportActions`]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Simple {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -208,13 +208,13 @@ pub struct Simple {
 /// Arguments for [`AVTransport::Play`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Play {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// The speed at which to play the resource.
     #[serde(rename = "Speed")]
     pub speed: PlaySpeed,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
@@ -240,7 +240,7 @@ impl Display for PlaySpeed {
 /// Arguments for [`AVTransport::Seek`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Seek {
-    /// The XML namespace for the AVTransport service.
+    /// The XML namespace for the `AVTransport` service.
     #[serde(rename = "@xmlns:u")]
     pub xmlns_u: String,
     /// The target position of the seek action, in terms of units defined by the [`unit`](`Seek::unit`) field.
@@ -249,7 +249,7 @@ pub struct Seek {
     /// The unit in which the amount of seeking to be performed is specified.
     #[serde(rename = "Unit")]
     pub unit: SeekUnit,
-    /// The virtual instance of the AVTransport service to which the action applies.
+    /// The virtual instance of the `AVTransport` service to which the action applies.
     #[serde(rename = "InstanceID")]
     pub instance_id: u32,
 }
