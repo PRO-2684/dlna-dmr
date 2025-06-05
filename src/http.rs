@@ -142,8 +142,16 @@ pub trait HTTPServer {
     /// ## Errors
     ///
     /// Returns an error if reading the request body fails or if responding to the request fails.
-    #[allow(unused_variables, reason = "Blanket implementation, might be used when overriden")]
-    fn handle_post(&self, endpoint: Endpoint, options: &DMROptions, mut request: Request) -> IoResult<()> {
+    #[allow(
+        unused_variables,
+        reason = "Blanket implementation, might be used when overriden"
+    )]
+    fn handle_post(
+        &self,
+        endpoint: Endpoint,
+        options: &DMROptions,
+        mut request: Request,
+    ) -> IoResult<()> {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
         debug!("POST {endpoint}\n{body}");
@@ -201,8 +209,20 @@ pub trait HTTPServer {
     // GET Request handlers for specific endpoints.
 
     /// Handles POST requests for valid endpoints.
-    #[allow(unused_mut, reason = "Blanket implementation, might be mutated when overriden")]
-    fn handle_get(&self, endpoint: Endpoint, options: &DMROptions, mut request: Request) -> IoResult<()> {
+    ///
+    /// ## Errors
+    ///
+    /// Returns an error if responding to the request fails.
+    #[allow(
+        unused_mut,
+        reason = "Blanket implementation, might be mutated when overriden"
+    )]
+    fn handle_get(
+        &self,
+        endpoint: Endpoint,
+        options: &DMROptions,
+        mut request: Request,
+    ) -> IoResult<()> {
         let response = match endpoint {
             Endpoint::DeviceSpec => Self::get_device_spec(options),
             Endpoint::RenderingControl => Self::get_rendering_control(),
