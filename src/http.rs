@@ -59,7 +59,28 @@ pub type Response = GenericResponse<Cursor<Vec<u8>>>;
 
 /// A trait for handling HTTP requests for a DLNA DMR (Digital Media Renderer).
 ///
-/// Usually, you'll need to override [`post_rendering_control`](HTTPServer::post_rendering_control) and [`post_av_transport`](HTTPServer::post_av_transport) to implement your own handlers. You may override other methods for more control.
+/// ## Hierarchy Structure of Handlers
+///
+/// Usually, you'll only need to override [`post_rendering_control`](HTTPServer::post_rendering_control) and [`post_av_transport`](HTTPServer::post_av_transport) to implement your own handlers. Note that overriding the parent without calling the child will make it an orphan.
+///
+/// - [`handle_request`](HTTPServer::handle_request)
+///     - [`handle_post`](HTTPServer::handle_post)
+///         - [`post_device_spec`](HTTPServer::post_device_spec)
+///         - [`post_rendering_control`](HTTPServer::post_rendering_control)
+///         - [`post_av_transport`](HTTPServer::post_av_transport)
+///         - [`post_ignore`](HTTPServer::post_ignore)
+///     - [`handle_get`](HTTPServer::handle_get)
+///         - [`get_device_spec`](HTTPServer::get_device_spec)
+///         - [`get_rendering_control`](HTTPServer::get_rendering_control)
+///         - [`get_av_transport`](HTTPServer::get_av_transport)
+///         - [`get_ignore`](HTTPServer::get_ignore)
+///
+/// ## Other Methods
+///
+/// Usually you don't need to override these methods.
+///
+/// - Override [`run_http`](HTTPServer::run_http) if you decided to change the HTTP server backend.
+/// - Override [`content_type_xml`](HTTPServer::content_type_xml) to change the HTTP headers indicating the content is of XML type.
 pub trait HTTPServer {
     /// Create and run a HTTP server with the given options and running signal, blocking current thread.
     fn run_http(&self, options: DMROptions, running: Arc<AtomicBool>) {
@@ -110,15 +131,10 @@ pub trait HTTPServer {
             return request.respond(Response::from_string("").with_status_code(StatusCode(404)));
         };
         if is_post {
-            return Self::handle_post(self, endpoint, request);
+            Self::handle_post(self, endpoint, options, request)
+        } else {
+            Self::handle_get(self, endpoint, options, request)
         }
-        let response = match endpoint {
-            Endpoint::DeviceSpec => Self::get_device_spec(options),
-            Endpoint::RenderingControl => Self::get_rendering_control(),
-            Endpoint::AVTransport => Self::get_av_transport(),
-            Endpoint::Ignore => Self::get_ignore(),
-        };
-        request.respond(response)
     }
 
     /// Handles POST requests for valid endpoints.
@@ -126,7 +142,8 @@ pub trait HTTPServer {
     /// ## Errors
     ///
     /// Returns an error if reading the request body fails or if responding to the request fails.
-    fn handle_post(&self, endpoint: Endpoint, mut request: Request) -> IoResult<()> {
+    #[allow(unused_variables, reason = "Blanket implementation, might be used when overriden")]
+    fn handle_post(&self, endpoint: Endpoint, options: &DMROptions, mut request: Request) -> IoResult<()> {
         let mut body = String::with_capacity(request.body_length().unwrap_or_default());
         request.as_reader().read_to_string(&mut body)?;
         debug!("POST {endpoint}\n{body}");
@@ -182,6 +199,20 @@ pub trait HTTPServer {
     }
 
     // GET Request handlers for specific endpoints.
+
+    /// Handles POST requests for valid endpoints.
+    #[allow(unused_mut, reason = "Blanket implementation, might be mutated when overriden")]
+    fn handle_get(&self, endpoint: Endpoint, options: &DMROptions, mut request: Request) -> IoResult<()> {
+        let response = match endpoint {
+            Endpoint::DeviceSpec => Self::get_device_spec(options),
+            Endpoint::RenderingControl => Self::get_rendering_control(),
+            Endpoint::AVTransport => Self::get_av_transport(),
+            Endpoint::Ignore => Self::get_ignore(),
+        };
+        request.respond(response)?;
+
+        Ok(())
+    }
 
     /// Handles GET requests for `/DeviceSpec`.
     #[must_use]

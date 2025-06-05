@@ -1,6 +1,59 @@
 //! # `dlna-dmr` library crate
 //!
 //! If you are reading this, you are reading the documentation for the `dlna-dmr` library crate. For the cli, kindly refer to the README file.
+//!
+//! ## Overview
+//!
+//! This crate provides a framework for building a Digital Media Renderer (DMR). It only provides the functionality of accepting commands from a Digital Media Controller (DMC), and how to handle them will be left to you to implement.
+//!
+//! ## Usage
+//!
+//! To build your DMR, you'll first need to implement the [`HTTPServer`] trait, which describes how to handle various commands:
+//!
+//! ```rust
+//! use dlna_dmr::HTTPServer;
+//!
+//! struct MyDMR {}
+//!
+//! impl HTTPServer for MyDMR {
+//!   // Refer to the documentation of `HTTPServer` on how to implement.
+//! }
+//! ```
+//!
+//! Then, you simply implement the [`DMR`] trait:
+//!
+//! ```rust
+//! use dlna_dmr::{DMR, HTTPServer};
+//! #
+//! # struct MyDMR {}
+//! #
+//! # impl HTTPServer for MyDMR {
+//! # }
+//! impl DMR for MyDMR {}
+//! ```
+//!
+//! To start your DMR, call the method [`DMR::run`] with an option and an abort signal:
+//!
+//! ```rust no_run
+//! use dlna_dmr::{DMR, DMROptions, HTTPServer};
+//! use std::sync::{Arc, atomic::AtomicBool};
+//! #
+//! # struct MyDMR {}
+//! #
+//! # impl HTTPServer for MyDMR {
+//! # }
+//! # impl DMR for MyDMR {}
+//!
+//! // Instantiate `MyDMR`
+//! let dmr = MyDMR {};
+//! // Use default config (Refer to documentation of `DMROptions` on configuration)
+//! let options = DMROptions::default();
+//! // Abort signal (The DMR stops when it is set to false)
+//! // See main.rs for integration with the `ctrlc` lib
+//! let running = Arc::new(AtomicBool::new(true));
+//! // Running the DMR (Will block current thread)
+//! dmr.run(options, running);
+//! ```
 
 #![deny(missing_docs)]
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
@@ -20,7 +73,7 @@ use std::{
     sync::{Arc, atomic::AtomicBool},
 };
 
-/// Options for creating a new [`DMR`] instance.
+/// Options for a DMR instance.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DMROptions {
     /// Local IP.
@@ -56,6 +109,24 @@ pub struct DMROptions {
     /// Serial number of the DMR instance.
     #[serde(default = "defaults::serial_number")]
     pub serial_number: String,
+}
+
+impl Default for DMROptions {
+    fn default() -> Self {
+        Self {
+            ip: defaults::ip(),
+            ssdp_port: defaults::ssdp_port(),
+            http_port: defaults::http_port(),
+            uuid: defaults::uuid(),
+            friendly_name: defaults::friendly_name(),
+            model_name: defaults::model_name(),
+            model_description: defaults::model_description(),
+            model_url: defaults::model_url(),
+            manufacturer: defaults::manufacturer(),
+            manufacturer_url: defaults::manufacturer_url(),
+            serial_number: defaults::serial_number(),
+        }
+    }
 }
 
 /// A trait for DMR instances.

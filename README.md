@@ -8,7 +8,11 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/dlna-dmr?logo=rust)](https://crates.io/crates/dlna-dmr)
 [![docs.rs](https://img.shields.io/docsrs/dlna-dmr?logo=rust)](https://docs.rs/dlna-dmr)
 
-A dummy DLNA Digital Media Renderer.
+An extensible DLNA DMR (Digital Media Renderer) implementation.
+
+## 🤔 Cli or Lib?
+
+The `dlna-dmr` cli itself is a dummy DMR that only logs the received commands, without actually doing anything with them. It is perfect for debugging purposes, but to build a real DMR, refer to the [library documentation](https://docs.rs/dlna-dmr/latest/dlna_dmr/).
 
 ## 📥 Installation
 
@@ -30,7 +34,7 @@ cargo install dlna-dmr
 
 ## 📖 Usage
 
-To run the DMR, simply execute the following command in your terminal:
+To run the dummy DMR, simply execute the following command in your terminal:
 
 ```shell
 $ dlna-dmr
@@ -51,7 +55,7 @@ To configure, simply pass in a path to a configuration file:
 dlna-dmr path/to/config.toml
 ```
 
-For more information on configuration options, see the `DMROptions` struct in [`lib.rs`](./src/lib.rs).
+For more information on configuration options, see the documentation for [`DMROptions`](https://docs.rs/dlna-dmr/latest/dlna_dmr/struct.DMROptions.html).
 
 ## ✅ TODO
 
@@ -60,7 +64,3 @@ For more information on configuration options, see the `DMROptions` struct in [`
 - [ ] "Heartbeat" - send periodic alive messages to the network
 - [ ] Command line arguments parsing
 - [ ] Testing HTTP server via [`TestRequest`](https://docs.rs/tiny_http/0.12.0/tiny_http/struct.TestRequest.html)
-
-## 🎉 Credits
-
-TODO
