@@ -61,6 +61,6 @@ For more information on configuration options, see the documentation for [`DMROp
 
 - [x] Actual XML parsing
 - [x] Config file
-- [ ] "Heartbeat" - send periodic alive messages to the network
+- [x] "Heartbeat" - send periodic alive messages to the network
 - [ ] Command line arguments parsing
 - [ ] Testing HTTP server via [`TestRequest`](https://docs.rs/tiny_http/0.12.0/tiny_http/struct.TestRequest.html)

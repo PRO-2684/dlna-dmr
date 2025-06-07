@@ -10,6 +10,7 @@ use std::{
         Arc,
         atomic::{AtomicBool, Ordering},
     },
+    thread::sleep,
     time::Duration,
 };
 
@@ -31,6 +32,8 @@ impl SSDPServer {
     const SSDP_SERVER_NAME: &'static str = "CustomSSDP/1.0";
     /// The timeout for reading from the socket in milliseconds.
     const SOCKET_READ_TIMEOUT: u64 = 1000;
+    /// Interval for sending keep-alive messages.
+    const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(60);
 
     /// Creates a new SSDP server bound to the specified address with the given UUID and HTTP port.
     pub fn new(
@@ -125,8 +128,22 @@ impl SSDPServer {
     }
 
     /// Broadcast multiple relevant `ssdp:alive` messages.
-    pub fn alive(&self) -> Result<()> {
+    fn alive(&self) -> Result<()> {
         self.notify_all("ssdp:alive")
+    }
+
+    /// Broadcast multiple relevant `ssdp:alive` messages periodically, blocking current thread. (Keep-alive / Heartbeat)
+    pub fn keep_alive(&self) {
+        info!("Starting SSDP keep-alive thread");
+        while self.running.load(Ordering::SeqCst) {
+            if let Err(e) = self.alive() {
+                error!("Failed to send SSDP alive message: {e}");
+            } else {
+                trace!("SSDP alive message sent");
+            }
+            sleep(Self::KEEP_ALIVE_INTERVAL);
+        }
+        info!("SSDP keep-alive thread stopped");
     }
 
     /// Broadcast multiple relevant `ssdp:byebye` messages.
@@ -175,7 +192,7 @@ impl SSDPServer {
         Ok(())
     }
 
-    /// Starts the SSDP server, listening for incoming messages, stops when [`running`](Self::running) is set to false.
+    /// Starts the SSDP server, listening for incoming messages, stops when [`running`](Self::running) is set to false, blocking current thread.
     pub fn run(&self) {
         info!("SSDP server running on {}", self.address);
 

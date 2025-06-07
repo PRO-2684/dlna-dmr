@@ -65,7 +65,7 @@ mod ssdp;
 pub mod xml;
 
 pub use http::{HTTPServer, Response};
-use log::{error, info};
+use log::info;
 use serde::{Deserialize, Serialize};
 use ssdp::SSDPServer;
 use std::{
@@ -153,12 +153,12 @@ pub trait DMR: HTTPServer {
             running.clone(),
         )
         .expect("Failed to create SSDP server");
-        if let Err(e) = ssdp.alive() {
-            error!("Error broadcasting alive message: {e}");
-        }
 
         // Scoped thread
         std::thread::scope(|s| {
+            s.spawn(|| {
+                ssdp.keep_alive();
+            });
             // Start the SSDP server
             s.spawn(|| ssdp.run());
             // Start the HTTP server
