@@ -21,6 +21,7 @@ quick-xml = { version = "0.37.5", features = ["serialize"] }
 serde = { version = "1.0.219", features = ["derive"] }
 socket2 = "0.5.10"
 tiny_http = "0.12.0"
+tokio = { version = "1.45.1", features = ["rt-multi-thread", "net", "macros", "signal", "time"] }
 toml = { version = "0.8.22", optional = true, default-features = false, features = ["parse"] }
 uuid = { version = "1.17.0", features = ["v4"] }
 

@@ -4,24 +4,18 @@ use log::{error, info, trace};
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use std::{
     io::{Error, ErrorKind, Result},
-    mem::MaybeUninit,
-    net::{Ipv4Addr, SocketAddrV4},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
-    thread::sleep,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     time::Duration,
 };
+use tokio::{net::UdpSocket, time::sleep};
 
 /// A SSDP server implementation.
 #[derive(Debug)]
 pub struct SSDPServer {
-    socket: Socket,
+    socket: UdpSocket,
     address: SocketAddrV4,
     uuid: String,
     http_port: u16,
-    running: Arc<AtomicBool>,
 }
 
 impl SSDPServer {
@@ -36,11 +30,10 @@ impl SSDPServer {
     const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(60);
 
     /// Creates a new SSDP server bound to the specified address with the given UUID and HTTP port.
-    pub fn new(
+    pub async fn new(
         address: SocketAddrV4,
         uuid: String,
         http_port: u16,
-        running: Arc<AtomicBool>,
     ) -> Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
@@ -49,7 +42,7 @@ impl SSDPServer {
             Ipv4Addr::UNSPECIFIED,
             address.port(),
         )))?;
-        socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?;
+        // socket.set_read_timeout(Some(Duration::from_millis(Self::SOCKET_READ_TIMEOUT)))?; // FIXME: Do we need this?
         // Set the socket to allow broadcast.
         socket.set_broadcast(true)?;
         // Join the SSDP multicast group.
@@ -57,12 +50,14 @@ impl SSDPServer {
             Self::SSDP_MULTICAST_ADDR.ip(), // Multicast address
             address.ip(),                   // Use the unspecified address for the local interface
         )?;
+        // Convert the socket to a Tokio UdpSocket.
+        let socket = UdpSocket::from_std(socket.into())?;
+
         Ok(Self {
             socket,
             address,
             uuid,
             http_port,
-            running,
         })
     }
 
@@ -73,7 +68,7 @@ impl SSDPServer {
     /// - `nt`: Notification Type
     /// - `nts`: Notification Sub Type
     /// - `usn`: Unique Service Name
-    fn notify(&self, nt: &str, nts: &str, usn: &str) -> Result<()> {
+    async fn notify(&self, nt: &str, nts: &str, usn: &str) -> Result<()> {
         let message = format!(
             "NOTIFY * HTTP/1.1\r\n\
              HOST: {}\r\n\
@@ -93,13 +88,13 @@ impl SSDPServer {
         );
         self.socket.send_to(
             message.as_bytes(),
-            &SockAddr::from(Self::SSDP_MULTICAST_ADDR),
-        )?;
+            &Self::SSDP_MULTICAST_ADDR,
+        ).await?;
         Ok(())
     }
 
     /// Broadcast a notify message for given `service` with given Notification Sub Type.
-    fn notify_service(&self, service: &str, nts: &str) -> Result<()> {
+    async fn notify_service(&self, service: &str, nts: &str) -> Result<()> {
         self.notify(
             &format!("urn:schemas-upnp-org:service:{service}:1"),
             nts,
@@ -107,54 +102,53 @@ impl SSDPServer {
                 "uuid:{uuid}::urn:schemas-upnp-org:service:{service}:1",
                 uuid = self.uuid
             ),
-        )
+        ).await
     }
 
     /// Broadcast multiple relevant notify messages with given Notification Sub Type.
-    fn notify_all(&self, nts: &str) -> Result<()> {
+    async fn notify_all(&self, nts: &str) -> Result<()> {
         let uuid_with_prefix = format!("uuid:{}", self.uuid);
 
         self.notify(
             "upnp:rootdevice",
             nts,
             &format!("{uuid_with_prefix}::upnp:rootdevice"),
-        )?;
-        self.notify(&uuid_with_prefix, nts, &uuid_with_prefix)?;
+        ).await?;
+        self.notify(&uuid_with_prefix, nts, &uuid_with_prefix).await?;
         for service in ["RenderingControl", "AVTransport", "ConnectionManager"] {
-            self.notify_service(service, nts)?;
+            self.notify_service(service, nts).await?;
         }
 
         Ok(())
     }
 
     /// Broadcast multiple relevant `ssdp:alive` messages.
-    fn alive(&self) -> Result<()> {
-        self.notify_all("ssdp:alive")
+    async fn alive(&self) -> Result<()> {
+        self.notify_all("ssdp:alive").await
     }
 
     /// Broadcast multiple relevant `ssdp:alive` messages periodically, blocking current thread. (Keep-alive / Heartbeat)
-    pub fn keep_alive(&self) {
+    pub async fn keep_alive(&self) {
         info!("Starting SSDP keep-alive thread");
-        while self.running.load(Ordering::SeqCst) {
-            if let Err(e) = self.alive() {
+        loop {
+            if let Err(e) = self.alive().await {
                 error!("Failed to send SSDP alive message: {e}");
             } else {
                 trace!("SSDP alive message sent");
             }
             sleep(Self::KEEP_ALIVE_INTERVAL);
         }
-        info!("SSDP keep-alive thread stopped");
     }
 
     /// Broadcast multiple relevant `ssdp:byebye` messages.
-    fn byebye(&self) -> Result<()> {
-        self.notify_all("ssdp:byebye")
+    async fn byebye(&self) -> Result<()> {
+        self.notify_all("ssdp:byebye").await
     }
 
     /// Answer a SSDP message from given address.
-    fn answer(&self, address: SocketAddrV4, message: &str) -> Result<()> {
+    async fn answer(&self, address: SocketAddrV4, message: &str) -> Result<()> {
         if message.starts_with("M-SEARCH") {
-            self.answer_search(address, message)
+            self.answer_search(address, message).await
         } else if message.starts_with("NOTIFY") {
             Ok(())
         } else {
@@ -166,7 +160,7 @@ impl SSDPServer {
     }
 
     /// Answer a M-SEARCH request.
-    fn answer_search(&self, address: SocketAddrV4, _message: &str) -> Result<()> {
+    async fn answer_search(&self, address: SocketAddrV4, _message: &str) -> Result<()> {
         // TODO: Check if we should respond to this M-SEARCH request.
         let response = format!(
             "HTTP/1.1 200 OK\r\n\
@@ -187,29 +181,26 @@ impl SSDPServer {
         );
         trace!("Sending SSDP response to {address}: {response}");
         self.socket
-            .send_to(response.as_bytes(), &SockAddr::from(address))?;
+            .send_to(response.as_bytes(), address).await?;
 
         Ok(())
     }
 
     /// Starts the SSDP server, listening for incoming messages, stops when [`running`](Self::running) is set to false, blocking current thread.
-    pub fn run(&self) {
+    pub async fn run(&self) {
         info!("SSDP server running on {}", self.address);
 
-        let mut buf = [MaybeUninit::zeroed(); 4096];
-        while self.running.load(Ordering::SeqCst) {
-            match self.socket.recv_from(&mut buf) {
+        let mut buf = [0u8; 4096];
+        loop {
+            match self.socket.recv_from(&mut buf).await {
                 Ok((size, addr)) => {
-                    // Safety: We already initialized the buffer with `MaybeUninit::zeroed()`, so we can safely assume the contents are valid.
-                    let slice =
-                        unsafe { std::slice::from_raw_parts(buf.as_ptr().cast::<u8>(), size) };
-                    let message = String::from_utf8_lossy(slice);
-                    let Some(ipv4) = addr.as_socket_ipv4() else {
+                    let message = String::from_utf8_lossy(&buf[..size]);
+                    let SocketAddr::V4(ipv4) = addr else {
                         error!("Received non-IPv4 address: {addr:?}");
                         continue;
                     };
                     trace!("Received SSDP message from {ipv4}: {message}");
-                    if let Err(e) = self.answer(ipv4, &message) {
+                    if let Err(e) = self.answer(ipv4, &message).await {
                         error!("Error answering SSDP message: {e}");
                     }
                 }
@@ -219,8 +210,11 @@ impl SSDPServer {
                 }
             }
         }
+    }
 
-        if let Err(e) = self.byebye() {
+    /// Stops the SSDP server.
+    pub async fn stop(&self) {
+        if let Err(e) = self.byebye().await {
             error!("Failed to send SSDP byebye message: {e}");
         } else {
             info!("SSDP server stopped");
