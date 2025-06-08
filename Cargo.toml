@@ -14,7 +14,6 @@ authors = ["PRO-2684"]
 [dependencies]
 axum = { version = "0.8.4", default-features = false, features = ["http1", "tokio", "tower-log", "tracing"] }
 chrono = { version = "0.4.41", default-features = false, features = ["alloc", "std", "clock", "now"] }
-ctrlc = { version = "3.4.7", optional = true }
 env_logger = { version = "0.11.8", optional = true }
 local-ip-address = "0.6.5"
 log = "0.4.27"
@@ -31,7 +30,7 @@ required-features = ["cli"]
 
 [features]
 cli = ["ctrlc", "env_logger", "toml"]
-ctrlc = ["dep:ctrlc"]
+ctrlc = []
 
 [profile.release]
 debug = false     # Disable debug information in release builds.

@@ -1,24 +1,24 @@
 #![warn(clippy::all, clippy::nursery, clippy::pedantic, clippy::cargo)]
 
+use axum::{http::StatusCode, response::IntoResponse};
 use dlna_dmr::{
-    DMR, DMROptions, HTTPServer, Response,
+    DMR, DMROptions, HTTPServer,
     xml::{AVTransport, RenderingControl},
 };
 use log::{info, warn};
 use quick_xml::DeError;
 use std::{
     io::{Error, ErrorKind, Result as IoResult},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::Arc,
 };
-use tiny_http::StatusCode;
 
 struct DummyDMR {}
 
 impl HTTPServer for DummyDMR {
-    fn post_av_transport(&self, av_transport: Result<AVTransport, DeError>) -> Response {
+    async fn post_av_transport(
+        &self,
+        av_transport: Result<AVTransport, DeError>,
+    ) -> impl IntoResponse {
         match av_transport {
             Ok(av_transport) => match av_transport {
                 AVTransport::SetAVTransportURI(set) => info!(
@@ -38,13 +38,13 @@ impl HTTPServer for DummyDMR {
             },
             Err(e) => warn!("Failed to deserialize `/AVTransport` XML: {e}"),
         };
-        Response::from_string("").with_status_code(StatusCode(405))
+        StatusCode::METHOD_NOT_ALLOWED
     }
 
-    fn post_rendering_control(
+    async fn post_rendering_control(
         &self,
         rendering_control: Result<RenderingControl, DeError>,
-    ) -> Response {
+    ) -> impl IntoResponse {
         match rendering_control {
             Ok(rendering_control) => match rendering_control {
                 RenderingControl::SelectPreset(select) => info!(
@@ -65,13 +65,14 @@ impl HTTPServer for DummyDMR {
                 warn!("Failed to deserialize `/RenderingControl` XML: {e}");
             }
         }
-        Response::from_string("").with_status_code(StatusCode(405))
+        StatusCode::METHOD_NOT_ALLOWED
     }
 }
 
 impl DMR for DummyDMR {}
 
-fn main() -> IoResult<()> {
+#[tokio::main]
+async fn main() -> IoResult<()> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info")).init();
 
     // Load and parse configuration
@@ -87,17 +88,9 @@ fn main() -> IoResult<()> {
         Error::new(ErrorKind::InvalidData, e)
     })?;
 
-    let running = Arc::new(AtomicBool::new(true));
-    let running_clone = running.clone();
     let dmr = DummyDMR {};
+    let dmr = Box::leak(Box::new(dmr));
 
-    // Set up Ctrl-C handler before starting the servers
-    ctrlc::set_handler(move || {
-        running_clone.store(false, Ordering::SeqCst);
-    })
-    .expect("Error setting Ctrl-C handler");
-
-    // Start the DMR, which will block until stopped
-    dmr.run(options, running);
-    Ok(())
+    // Start the DMR, stopping when Ctrl-C is pressed.
+    dmr.run(Arc::new(options)).await
 }
