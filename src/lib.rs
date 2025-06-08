@@ -32,11 +32,11 @@
 //! impl DMR for MyDMR {}
 //! ```
 //!
-//! To start your DMR, call the method [`DMR::run`] with an option and an abort signal:
+//! To start your DMR, call the method [`DMR::run`] with an option:
 //!
-//! ```rust no_run
+//! ```rust
 //! use dlna_dmr::{DMR, DMROptions, HTTPServer};
-//! use std::sync::{Arc, atomic::AtomicBool};
+//! use std::sync::Arc;
 //! #
 //! # struct MyDMR {}
 //! #
@@ -44,15 +44,15 @@
 //! # }
 //! # impl DMR for MyDMR {}
 //!
-//! // Instantiate `MyDMR`
-//! let dmr = MyDMR {};
-//! // Use default config (Refer to documentation of `DMROptions` on configuration)
-//! let options = DMROptions::default();
-//! // Abort signal (The DMR stops when it is set to false)
-//! // See main.rs for integration with the `ctrlc` lib
-//! let running = Arc::new(AtomicBool::new(true));
-//! // Running the DMR (Will block current thread)
-//! dmr.run(options, running);
+//! # async fn run() { // This function won't be run intentionally
+//!     // Instantiate `MyDMR`
+//!     let dmr = MyDMR {};
+//!     let dmr = Box::leak(Box::new(dmr));
+//!     // Use default config (Refer to documentation of `DMROptions` on configuration)
+//!     let options = DMROptions::default();
+//!     // Running the DMR until Ctrl-C is pressed.
+//!     dmr.run(Arc::new(options)).await.unwrap();
+//! # }
 //! ```
 
 #![deny(missing_docs)]
@@ -133,16 +133,7 @@ impl Default for DMROptions {
 
 /// A trait for DMR instances.
 pub trait DMR: HTTPServer {
-    /// Create and run the DMR instance, blocking current thread.
-    ///
-    /// ## Stopping
-    ///
-    /// To stop the DMR, set the `running` signal, as you've passed in the [`new`](Self::new) method, to `false`:
-    ///
-    /// ```rust ignore
-    /// use std::sync::atomic::Ordering;
-    /// running.store(false, Ordering::SeqCst);
-    /// ```
+    /// Create and run the DMR instance, stopping when Ctrl-C is pressed.
     fn run(&'static self, options: Arc<DMROptions>) -> impl Future<Output = IoResult<()>> + Send
     where
         Self: Sync,

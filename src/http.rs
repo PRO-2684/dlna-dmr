@@ -32,7 +32,7 @@ use std::{io::Result as IoResult, net::SocketAddrV4, str::FromStr, sync::Arc};
 ///
 /// - Override [`run_http`](HTTPServer::run_http) if you decide to change the HTTP server backend, or for a finer control over the server's behavior.
 pub trait HTTPServer: Sync {
-    /// Create and run a HTTP server with the given options and running signal, blocking current thread.
+    /// Create and run a HTTP server with the given options.
     fn run_http(&'static self, options: Arc<DMROptions>) -> impl Future<Output = IoResult<()>> + Send {async {
         let ip = options.ip;
         let http_port = options.http_port;
@@ -61,6 +61,7 @@ pub trait HTTPServer: Sync {
                 "/Ignore",
                 get(Self::get_ignore).post(async || self.post_ignore().await),
             );
+        // TODO: Using state to pass `self`
 
         axum::serve(listener, app).await
     } }

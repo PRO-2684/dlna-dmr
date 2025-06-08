@@ -125,7 +125,7 @@ impl SSDPServer {
         self.notify_all("ssdp:alive").await
     }
 
-    /// Broadcast multiple relevant `ssdp:alive` messages periodically, blocking current thread. (Keep-alive / Heartbeat)
+    /// Broadcast multiple relevant `ssdp:alive` messages periodically. (Keep-alive / Heartbeat)
     pub async fn keep_alive(&self) {
         info!("Starting SSDP keep-alive thread");
         loop {
@@ -183,7 +183,7 @@ impl SSDPServer {
         Ok(())
     }
 
-    /// Starts the SSDP server, listening for incoming messages, stops when [`running`](Self::running) is set to false, blocking current thread.
+    /// Starts the SSDP server.
     pub async fn run(&self) {
         info!("SSDP server running on {}", self.address);
 
