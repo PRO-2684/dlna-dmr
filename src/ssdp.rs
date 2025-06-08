@@ -30,11 +30,7 @@ impl SSDPServer {
     const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(60);
 
     /// Creates a new SSDP server bound to the specified address with the given UUID and HTTP port.
-    pub async fn new(
-        address: SocketAddrV4,
-        uuid: String,
-        http_port: u16,
-    ) -> Result<Self> {
+    pub async fn new(address: SocketAddrV4, uuid: String, http_port: u16) -> Result<Self> {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         socket.set_nonblocking(true)?;
         socket.set_reuse_address(true)?;
@@ -86,10 +82,9 @@ impl SSDPServer {
             self.address,
             Self::SSDP_SERVER_NAME
         );
-        self.socket.send_to(
-            message.as_bytes(),
-            &Self::SSDP_MULTICAST_ADDR,
-        ).await?;
+        self.socket
+            .send_to(message.as_bytes(), &Self::SSDP_MULTICAST_ADDR)
+            .await?;
         Ok(())
     }
 
@@ -102,7 +97,8 @@ impl SSDPServer {
                 "uuid:{uuid}::urn:schemas-upnp-org:service:{service}:1",
                 uuid = self.uuid
             ),
-        ).await
+        )
+        .await
     }
 
     /// Broadcast multiple relevant notify messages with given Notification Sub Type.
@@ -113,8 +109,10 @@ impl SSDPServer {
             "upnp:rootdevice",
             nts,
             &format!("{uuid_with_prefix}::upnp:rootdevice"),
-        ).await?;
-        self.notify(&uuid_with_prefix, nts, &uuid_with_prefix).await?;
+        )
+        .await?;
+        self.notify(&uuid_with_prefix, nts, &uuid_with_prefix)
+            .await?;
         for service in ["RenderingControl", "AVTransport", "ConnectionManager"] {
             self.notify_service(service, nts).await?;
         }
@@ -180,8 +178,7 @@ impl SSDPServer {
             chrono::Utc::now().format("%a, %d %b %Y %H:%M:%S GMT")
         );
         trace!("Sending SSDP response to {address}: {response}");
-        self.socket
-            .send_to(response.as_bytes(), address).await?;
+        self.socket.send_to(response.as_bytes(), address).await?;
 
         Ok(())
     }
@@ -204,6 +201,7 @@ impl SSDPServer {
                         error!("Error answering SSDP message: {e}");
                     }
                 }
+                // FIXME: Do we need this?
                 Err(e) if e.kind() == ErrorKind::WouldBlock => {} // Non-blocking mode, just do nothing.
                 Err(e) => {
                     error!("Error receiving SSDP message: {e}");

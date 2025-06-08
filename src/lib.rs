@@ -64,7 +64,8 @@ mod http;
 mod ssdp;
 pub mod xml;
 
-pub use http::{HTTPServer, Response};
+pub use axum::response::Response;
+pub use http::HTTPServer;
 use log::info;
 use serde::{Deserialize, Serialize};
 use ssdp::SSDPServer;
