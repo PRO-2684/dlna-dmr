@@ -7,7 +7,7 @@ use super::{
 use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
 use log::info;
 use quick_xml::{DeError, escape::escape};
-use std::{io::Result as IoResult, net::SocketAddrV4, str::FromStr};
+use std::{io::Result as IoResult, net::SocketAddrV4, str::FromStr, sync::Arc};
 
 /// A trait for handling HTTP requests for a DLNA DMR (Digital Media Renderer).
 ///
@@ -16,15 +16,15 @@ use std::{io::Result as IoResult, net::SocketAddrV4, str::FromStr};
 /// Usually, you'll only need to override [`post_rendering_control`](HTTPServer::post_rendering_control) and [`post_av_transport`](HTTPServer::post_av_transport) to implement your own handlers. Note that overriding the parent without calling the child will make it an orphan.
 ///
 /// - GET
-///     - [`post_device_spec`](HTTPServer::post_device_spec)
-///     - [`post_rendering_control`](HTTPServer::post_rendering_control)
-///     - [`post_av_transport`](HTTPServer::post_av_transport)
-///     - [`post_ignore`](HTTPServer::post_ignore)
-/// - POST
 ///     - [`get_device_spec`](HTTPServer::get_device_spec)
 ///     - [`get_rendering_control`](HTTPServer::get_rendering_control)
 ///     - [`get_av_transport`](HTTPServer::get_av_transport)
 ///     - [`get_ignore`](HTTPServer::get_ignore)
+/// - POST
+///     - [`post_device_spec`](HTTPServer::post_device_spec)
+///     - [`post_rendering_control`](HTTPServer::post_rendering_control)
+///     - [`post_av_transport`](HTTPServer::post_av_transport)
+///     - [`post_ignore`](HTTPServer::post_ignore)
 ///
 /// ## Other Methods
 ///
@@ -33,9 +33,10 @@ use std::{io::Result as IoResult, net::SocketAddrV4, str::FromStr};
 /// - Override [`run_http`](HTTPServer::run_http) if you decide to change the HTTP server backend, or for a finer control over the server's behavior.
 pub trait HTTPServer: Sync {
     /// Create and run a HTTP server with the given options and running signal, blocking current thread.
-    async fn run_http(&'static self, options: &'static DMROptions) -> IoResult<()> {
-        let DMROptions { ip, http_port, .. } = options;
-        let listener = tokio::net::TcpListener::bind(SocketAddrV4::new(*ip, *http_port)).await?;
+    fn run_http(&'static self, options: Arc<DMROptions>) -> impl Future<Output = IoResult<()>> + Send {async {
+        let ip = options.ip;
+        let http_port = options.http_port;
+        let listener = tokio::net::TcpListener::bind(SocketAddrV4::new(ip, http_port)).await?;
         info!("HTTP server listening on {ip}:{http_port}");
 
         let app = Router::new()
@@ -60,10 +61,9 @@ pub trait HTTPServer: Sync {
                 "/Ignore",
                 get(Self::get_ignore).post(async || self.post_ignore().await),
             );
-        // .fallback(any(Self::handle_request));
 
         axum::serve(listener, app).await
-    }
+    } }
 
     // POST Request handlers for specific endpoints.
 
@@ -105,8 +105,8 @@ pub trait HTTPServer: Sync {
 
     /// Handles GET requests for `/DeviceSpec`.
     #[must_use]
-    fn get_device_spec(options: &DMROptions) -> impl Future<Output = impl IntoResponse> + Send {
-        async {
+    fn get_device_spec(options: Arc<DMROptions>) -> impl Future<Output = impl IntoResponse> + Send {
+        async move {
             /// Escapes given field under `options`.
             macro_rules! e {
                 ($i:ident) => {

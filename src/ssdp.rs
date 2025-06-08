@@ -24,8 +24,8 @@ impl SSDPServer {
         SocketAddrV4::new(Ipv4Addr::new(239, 255, 255, 250), 1900);
     /// The SSDP server's name.
     const SSDP_SERVER_NAME: &'static str = "CustomSSDP/1.0";
-    /// The timeout for reading from the socket in milliseconds.
-    const SOCKET_READ_TIMEOUT: u64 = 1000;
+    // /// The timeout for reading from the socket in milliseconds.
+    // const SOCKET_READ_TIMEOUT: u64 = 1000;
     /// Interval for sending keep-alive messages.
     const KEEP_ALIVE_INTERVAL: Duration = Duration::from_secs(60);
 
@@ -134,7 +134,7 @@ impl SSDPServer {
             } else {
                 trace!("SSDP alive message sent");
             }
-            sleep(Self::KEEP_ALIVE_INTERVAL);
+            sleep(Self::KEEP_ALIVE_INTERVAL).await;
         }
     }
 

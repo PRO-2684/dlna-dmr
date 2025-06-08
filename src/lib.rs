@@ -66,12 +66,13 @@ pub mod xml;
 
 pub use axum::response::Response;
 pub use http::HTTPServer;
-use log::info;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 use ssdp::SSDPServer;
 use std::{
     net::{Ipv4Addr, SocketAddrV4},
-    sync::{Arc, atomic::AtomicBool},
+    sync::Arc,
+    io::Result as IoResult,
 };
 
 /// Options for a DMR instance.
@@ -142,31 +143,36 @@ pub trait DMR: HTTPServer {
     /// use std::sync::atomic::Ordering;
     /// running.store(false, Ordering::SeqCst);
     /// ```
-    fn run(&self, options: DMROptions, running: Arc<AtomicBool>)
+    fn run(&'static self, options: Arc<DMROptions>) -> impl Future<Output = IoResult<()>> + Send
     where
         Self: Sync,
-    {
+    {async {
         let address = SocketAddrV4::new(options.ip, options.ssdp_port);
         let ssdp = SSDPServer::new(
             address,
             options.uuid.clone(),
             options.http_port,
-            running.clone(),
         )
-        .expect("Failed to create SSDP server");
+        .await?;
 
-        // Scoped thread
-        std::thread::scope(|s| {
-            s.spawn(|| {
-                ssdp.keep_alive();
-            });
-            // Start the SSDP server
-            s.spawn(|| ssdp.run());
-            // Start the HTTP server
-            s.spawn(|| self.run_http(options, running));
-            info!("DMR started");
-        });
+        tokio::select! {
+            _ = ssdp.keep_alive() => {}
+            _ = ssdp.run() => {}
+            r = self.run_http(options) => {
+                if let Err(e) = r {
+                    error!("IO Error while running HTTP server: {e}");
+                }
+            }
+            r = tokio::signal::ctrl_c() => {
+                if let Err(e) = r {
+                    error!("IO Error while waiting for Ctrl-C: {e}");
+                }
+            }
+        }
+
+        ssdp.stop().await;
 
         info!("DMR stopped");
-    }
+        Ok(())
+    } }
 }
