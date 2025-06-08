@@ -29,7 +29,7 @@ name = "dlna-dmr"
 required-features = ["cli"]
 
 [features]
-cli = ["ctrlc", "env_logger", "toml"]
+cli = ["env_logger", "toml"]
 ctrlc = []
 
 [profile.release]
